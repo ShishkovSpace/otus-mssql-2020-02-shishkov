@@ -1,5 +1,6 @@
+USE WideWorldImporters
 /*
-* First query
+* 1. Query to get data about items that have 'urgent' in their name or start with 'Animal'
 */
 select si.StockItemID, si.StockItemName
 from Warehouse.StockItems as si
@@ -7,18 +8,23 @@ where si.StockItemName like '%urgent%'
 	or si.StockItemName like 'Animal%'
 
 /*
-* Second query
+* 2. Query to get data about suppliers that have no orders
 */
 select Sup.SupplierID, Sup.SupplierName
 from Purchasing.Suppliers as Sup
 left join Purchasing.PurchaseOrders po on po.SupplierID=Sup.SupplierID
 group by Sup.SupplierID, Sup.SupplierName
 having count(po.SupplierID) = 0
+/*alternative query*/
+select Sup.SupplierID, Sup.SupplierName
+from Purchasing.PurchaseOrders as po
+right join Purchasing.Suppliers Sup on po.SupplierID=Sup.SupplierID
+where po.PurchaseOrderID is NULL
 
 /*
-* Third query
+* 3. Query to get data about sales and delivery date with info in which month, quarter and one third it have done
 */
-select	i.InvoiceID as ID,
+select distinct i.InvoiceID as ID,
 		DATENAME(month, ct.FinalizationDate) as Month,
 		DATEPART(QUARTER, ct.FinalizationDate) as Quarter,
 		case 
@@ -32,11 +38,11 @@ inner join Sales.InvoiceLines il on i.InvoiceID=il.InvoiceID
 inner join Sales.CustomerTransactions ct on i.InvoiceID=ct.InvoiceID
 where ct.IsFinalized=1
 -- Additional part of query
-order by Quarter, OneThird, i.InvoiceDate
+order by Quarter, OneThird, DeliveryDate
 OFFSET 1000 ROWS FETCH NEXT 100 ROWS ONLY
 
 /*
-* Forth query
+* 4. Query to get data about supplier's orders which done in 2014 with delivery type 'Road Freight' or 'Post'
 */
 select	po.PurchaseOrderID as OrderID,
 		s.SupplierName as Name,
@@ -44,12 +50,13 @@ select	po.PurchaseOrderID as OrderID,
 from Purchasing.PurchaseOrders po
 inner join Purchasing.Suppliers s on po.SupplierID=s.SupplierID
 inner join Application.People p on po.ContactPersonID=p.PersonID
-where po.DeliveryMethodID in (1,7)
-	and DATEPART(year, po.OrderDate)=2014
+inner join Application.DeliveryMethods dm on po.DeliveryMethodID=dm.DeliveryMethodID
+where dm.DeliveryMethodName in ('Road Freight', 'Post')
+	and DATEPART(year, po.ExpectedDeliveryDate)=2014
 	and po.IsOrderFinalized = 1
 
 /*
-* Fifth query
+* 5. Query to get data about last 10 sales with client name and sales person full name
 */
 select top 10	i.InvoiceID, 
 				c.CustomerName, 
@@ -62,7 +69,7 @@ where ct.IsFinalized=1
 order by i.InvoiceDate desc
 
 /*
-* Sixth query
+* 6. Query to get id, client names and their phone numebrs that have bought item 'Chocolate frogs 250g'
 */
 select distinct o.CustomerID, c.CustomerName, c.PhoneNumber
 from Sales.Orders o
