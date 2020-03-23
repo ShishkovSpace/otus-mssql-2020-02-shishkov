@@ -2,15 +2,29 @@
 /*
 * 1. Query to get data about average item price and total sales sum per month
 */
-select	AVG(il.UnitPrice) as AverageUnitPrice,
+-- for months over all years
+select	month(i.InvoiceDate) as Month, 
+		AVG(il.UnitPrice) as AverageUnitPrice,
 		SUM(il.UnitPrice*il.Quantity) as TotalSalesAmount
 from Sales.InvoiceLines il
 inner join Sales.Invoices i on i.InvoiceID=il.InvoiceID
-group by month(i.InvoiceDate);
+group by month(i.InvoiceDate)
+order by Month;
+
+-- for months over each year
+select	year(i.InvoiceDate) as Year,
+		month(i.InvoiceDate) as Month, 
+		AVG(il.UnitPrice) as AverageUnitPrice,
+		SUM(il.UnitPrice*il.Quantity) as TotalSalesAmount
+from Sales.InvoiceLines il
+inner join Sales.Invoices i on i.InvoiceID=il.InvoiceID
+group by year(i.InvoiceDate), month(i.InvoiceDate)
+order by Year, Month;
 
 /*
 * 2. Query to get info about all months where total sales amount more then 10000
 */
+-- for months over all years
 select	month(i.InvoiceDate) as Month,
 		SUM(il.UnitPrice*il.Quantity) as TotalSalesAmount
 from Sales.InvoiceLines il
@@ -19,17 +33,27 @@ group by month(i.InvoiceDate)
 having SUM(il.Quantity*il.UnitPrice)>10000
 order by Month;
 
+-- for months over each year
+select	year(i.InvoiceDate) as Year,
+		month(i.InvoiceDate) as Month,
+		SUM(il.UnitPrice*il.Quantity) as TotalSalesAmount
+from Sales.InvoiceLines il
+inner join Sales.Invoices i on i.InvoiceID=il.InvoiceID
+group by year(i.InvoiceDate), month(i.InvoiceDate)
+having SUM(il.Quantity*il.UnitPrice)>10000
+order by Year, Month;
+
 /*
 * 3. Query to get info about sales amount, date of first sale and amount of sold items per month
 * for items which have count less then 50 per month
 */
 select	SUM(il.UnitPrice*il.Quantity) as TotalSalesAmount,
 		MIN(i.InvoiceDate) as FirstSaleDate,
-		SUM(il.Quantity) as AmountOfSoldItems
+		SUM(il.Quantity) as AmountOfSoldItems 
 from Sales.InvoiceLines il
 inner join Sales.Invoices i on i.InvoiceID=il.InvoiceID
-group by year(i.InvoiceDate), month(i.InvoiceDate)
-having count(il.StockItemID)<=50
+group by il.StockItemID, year(i.InvoiceDate), month(i.InvoiceDate)
+having SUM(il.Quantity)<=50;
 
 /*
 * 4. Recursive CTE query to pull data into temporary table or table variable
@@ -75,14 +99,22 @@ from dbo.MyEmployees
 where ManagerID is NULL
 union all
 select	me.EmployeeID,
-		CONCAT(me.FirstName, ' ', me.LastName) as FullName,
+		CONCAT(FirstName, ' ', LastName)as FullName,
 		me.Title, 
 		cte.Level+1 as Level
 from dbo.MyEmployees me
 inner join CTEParent cte on cte.EmployeeID=me.ManagerID
 )
 insert into @var_table
-select *
+select	EmployeeID,
+		case Level
+			when 1 then FullName
+			when 2 then CONCAT('| ', FullName)
+			when 3 then CONCAT('|| ', FullName)
+			when 4 then CONCAT('||| ', FullName)
+		end as FullName,
+		Title,
+		Level
 from CTEParent;
 
 select *
@@ -117,7 +149,15 @@ insert into #temp_table
 	 FullName,
 	 Title,
 	 EmployeeLevel)
-select *
+select	EmployeeID,
+		case Level
+			when 1 then FullName
+			when 2 then CONCAT('| ', FullName)
+			when 3 then CONCAT('|| ', FullName)
+			when 4 then CONCAT('||| ', FullName)
+		end as FullName,
+		Title,
+		Level
 from CTEParent;
 
 select *
