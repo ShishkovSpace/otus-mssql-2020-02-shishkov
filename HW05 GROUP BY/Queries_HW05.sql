@@ -47,13 +47,15 @@ order by Year, Month;
 * 3. Query to get info about sales amount, date of first sale and amount of sold items per month
 * for items which have count less then 50 per month
 */
-select	SUM(il.UnitPrice*il.Quantity) as TotalSalesAmount,
+select	il.StockItemID as ItemID, year(i.InvoiceDate) as Year, month(i.InvoiceDate) as Month,
+		SUM(il.UnitPrice*il.Quantity) as TotalSalesAmount,
 		MIN(i.InvoiceDate) as FirstSaleDate,
 		SUM(il.Quantity) as AmountOfSoldItems 
 from Sales.InvoiceLines il
 inner join Sales.Invoices i on i.InvoiceID=il.InvoiceID
 group by il.StockItemID, year(i.InvoiceDate), month(i.InvoiceDate)
-having SUM(il.Quantity)<=50;
+having SUM(il.Quantity)<=50
+order by ItemID, Year, Month
 
 /*
 * 4. Recursive CTE query to pull data into temporary table or table variable
