@@ -42,3 +42,27 @@ for Address in (Address_1, Address_2, Address_3, Address_4)
 /*
 * 3. Digits and chars for countries
 */
+select ID, Name, Codes
+from (
+		select	c.CountryID as ID, c.CountryName as Name, 
+				c.IsoAlpha3Code as Code1, 
+				CAST(c.IsoNumericCode as nvarchar(3)) as Code2
+		from Application.Countries c
+) as Source
+unpivot (
+Codes
+for Code in (Code1, Code2)
+) as pvt
+
+/*
+* 4. Alternative for window function
+*/
+select c.CustomerID, c.CustomerName, Items.*
+from Sales.Customers c
+cross apply (
+	select distinct top 2 il.StockItemID, il.UnitPrice
+	from Sales.Invoices i
+	inner join Sales.InvoiceLines il on i.InvoiceID=il.InvoiceID
+	where i.CustomerID=c.CustomerID
+	order by il.UnitPrice desc
+) as Items
