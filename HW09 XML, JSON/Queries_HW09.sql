@@ -88,3 +88,30 @@ SELECT	si.StockItemID,
 		Tags = JSON_QUERY(si.CustomFields, '$.Tags')
 FROM Warehouse.StockItems si
 INNER JOIN VintageItems vi on vi.StockItemID=si.StockItemID and vi.Tag = 'Vintage';
+
+/*
+* 5. Dynamic pivot
+*/
+declare @c_Name nvarchar(max), @query nvarchar(max);
+
+select @c_Name=ISNULL(@c_Name + ',','') + QUOTENAME(CustomerName)
+from Sales.Customers;
+
+set @query = 
+N'with sourceRes as
+(
+	select	c.CustomerName as ClientName,
+			FORMAT(i.InvoiceDate,''01.MM.yyyy'') as FormattedDate,
+			i.InvoiceID as ID
+	from Sales.Customers c
+	inner join Sales.Invoices i on c.CustomerID=i.CustomerID
+)
+select *
+from sourceRes as Source
+pivot (
+COUNT(ID)
+for ClientName in ('+ @c_Name +')
+) as pvt
+order by year(FormattedDate), month(FormattedDate);';
+
+EXEC sp_executesql @query;
