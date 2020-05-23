@@ -180,8 +180,8 @@ GO
 
  CREATE NONCLUSTERED COLUMNSTORE INDEX [csIdx_2_1_2] ON [LT].[ScoresLT_2_1_2]
  (
+  [NumberOfExecution],
   [elapsedTime],
-  [Label],
   [ThreadName]
  )
 
@@ -221,8 +221,8 @@ GO
 
  CREATE NONCLUSTERED COLUMNSTORE INDEX [csIdx_2_2] ON [LT].[ScoresLT_2_2]
  (
+  [NumberOfExecution],
   [elapsedTime],
-  [Label],
   [ThreadName]
  )
 
@@ -262,8 +262,8 @@ GO
 
  CREATE NONCLUSTERED COLUMNSTORE INDEX [csIdx_2_3] ON [LT].[ScoresLT_2_3]
  (
+  [NumberOfExecution],
   [elapsedTime],
-  [Label],
   [ThreadName]
  )
 
@@ -303,8 +303,8 @@ GO
 
  CREATE NONCLUSTERED COLUMNSTORE INDEX [csIdx_2_4] ON [LT].[ScoresLT_2_4]
  (
+  [NumberOfExecution],
   [elapsedTime],
-  [Label],
   [ThreadName]
  )
 
@@ -344,8 +344,8 @@ GO
 
  CREATE NONCLUSTERED COLUMNSTORE INDEX [csIdx_2_6] ON [LT].[ScoresLT_2_6]
  (
+  [NumberOfExecution],
   [elapsedTime],
-  [Label],
   [ThreadName]
  )
 
@@ -385,8 +385,8 @@ GO
 
  CREATE NONCLUSTERED COLUMNSTORE INDEX [csIdx_2_7_1] ON [LT].[ScoresLT_2_7_1]
  (
+  [NumberOfExecution],
   [elapsedTime],
-  [Label],
   [ThreadName]
  )
 
@@ -426,8 +426,8 @@ GO
 
  CREATE NONCLUSTERED COLUMNSTORE INDEX [csIdx_2_7_2] ON [LT].[ScoresLT_2_7_2]
  (
+  [NumberOfExecution],
   [elapsedTime],
-  [Label],
   [ThreadName]
  )
 
@@ -467,8 +467,8 @@ GO
 
  CREATE NONCLUSTERED COLUMNSTORE INDEX [csIdx_2_7_3] ON [LT].[ScoresLT_2_7_3]
  (
+  [NumberOfExecution],
   [elapsedTime],
-  [Label],
   [ThreadName]
  )
 
@@ -508,8 +508,8 @@ GO
 
  CREATE NONCLUSTERED COLUMNSTORE INDEX [csIdx_2_7_4] ON [LT].[ScoresLT_2_7_4]
  (
+  [NumberOfExecution],
   [elapsedTime],
-  [Label],
   [ThreadName]
  )
 
@@ -549,8 +549,8 @@ GO
 
  CREATE NONCLUSTERED COLUMNSTORE INDEX [csIdx_2_7_5] ON [LT].[ScoresLT_2_7_5]
  (
+  [NumberOfExecution],
   [elapsedTime],
-  [Label],
   [ThreadName]
  )
 
@@ -590,8 +590,8 @@ GO
 
  CREATE NONCLUSTERED COLUMNSTORE INDEX [csIdx_2_7_6] ON [LT].[ScoresLT_2_7_6]
  (
+  [NumberOfExecution],
   [elapsedTime],
-  [Label],
   [ThreadName]
  )
 
@@ -631,8 +631,8 @@ GO
 
  CREATE NONCLUSTERED COLUMNSTORE INDEX [csIdx_2_8] ON [LT].[ScoresLT_2_8]
  (
+  [NumberOfExecution],
   [elapsedTime],
-  [Label],
   [ThreadName]
  )
 
@@ -672,8 +672,8 @@ GO
 
  CREATE NONCLUSTERED COLUMNSTORE INDEX [csIdx_2_9] ON [LT].[ScoresLT_2_9]
  (
+  [NumberOfExecution],
   [elapsedTime],
-  [Label],
   [ThreadName]
  )
 
@@ -713,8 +713,8 @@ GO
 
  CREATE NONCLUSTERED COLUMNSTORE INDEX [csIdx_2_10] ON [LT].[ScoresLT_2_10]
  (
+  [NumberOfExecution],
   [elapsedTime],
-  [Label],
   [ThreadName]
  )
 
