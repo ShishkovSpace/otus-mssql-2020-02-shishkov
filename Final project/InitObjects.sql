@@ -41,8 +41,8 @@ CREATE TABLE [LT].[ProjectInfo]
  [projectName]     nvarchar(100) NOT NULL ,
  [AppMajorVersion] int NOT NULL ,
  [AppMinorVersion] int NOT NULL ,
- [BuildValidFrom]  datetime2(7) NOT NULL ,
- [BuildValidTo]    datetime2(7) NULL CONSTRAINT [DF_ProjectInfo_BuildValidTo] DEFAULT GETDATE() ,
+ [BuildValidFrom]  datetime2(7) NOT NULL CONSTRAINT [DF_ProjectInfo_BuildValidFrom] DEFAULT GETDATE() ,
+ [BuildValidTo]    datetime2(7) NULL ,
 
  CONSTRAINT [PK_ProjectInfo] PRIMARY KEY CLUSTERED ([projectId] ASC)
 );
@@ -57,11 +57,12 @@ GO
 IF NOT EXISTS (SELECT * FROM sys.tables t join sys.schemas s ON (t.schema_id = s.schema_id) WHERE s.name='LT' and t.name='EnvInfo')
 CREATE TABLE [LT].[EnvInfo]
 (
- [EnvId]             int NOT NULL ,
+ [EnvId]             int IDENTITY(1, 1) NOT NULL ,
  [projectId]         int NOT NULL ,
  [NumberOfInstances] int NOT NULL ,
- [IsInternal]        binary(50) NOT NULL CONSTRAINT [DF_EnvInfo_IsInternal] DEFAULT 0 ,
- [IsAWS]             binary(50) NOT NULL CONSTRAINT [DF_EnvInfo_IsAWS] DEFAULT 0 ,
+ [IsInternal]        bit NOT NULL CONSTRAINT [DF_EnvInfo_IsInternal] DEFAULT 0 ,
+ [IsAWS]             bit NOT NULL CONSTRAINT [DF_EnvInfo_IsAWS] DEFAULT 0 ,
+ [EnvDescription]	 nvarchar(300) NULL ,
 
  CONSTRAINT [PK_EnvInfo] PRIMARY KEY CLUSTERED ([EnvId] ASC),
  CONSTRAINT [FK_projectId_Env] FOREIGN KEY ([projectId])  REFERENCES [LT].[ProjectInfo]([projectId])
@@ -100,7 +101,7 @@ GO
 IF NOT EXISTS (SELECT * FROM sys.tables t join sys.schemas s ON (t.schema_id = s.schema_id) WHERE s.name='LT' and t.name='TargetInfo')
 CREATE TABLE [LT].[TargetInfo]
 (
- [TargetId]    int NOT NULL ,
+ [TargetId]    int IDENTITY(1, 1) NOT NULL ,
  [projectId]   int NOT NULL ,
  [TargetName]  nvarchar(100) NOT NULL ,
  [TargetValue] int NOT NULL ,

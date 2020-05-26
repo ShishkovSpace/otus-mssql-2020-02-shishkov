@@ -1,9 +1,8 @@
-USE [LoadTestResults];
-
+USE [LoadTestResults]
 GO
+/****** Object:  StoredProcedure [LT].[prLoadTestScores]    Script Date: 26.05.2020 16:29:08 ******/
 SET ANSI_NULLS ON
 GO
-
 SET QUOTED_IDENTIFIER ON
 GO
 
@@ -38,7 +37,7 @@ BEGIN TRY
     );
 
     BULK INSERT #Stage_2_1_2
-    FROM 'C:\Users\U_M15F4\Desktop\Metrics\results_2_1_2.csv'
+    FROM 'C:\Users\Александр\Desktop\metrics\results_2_1_2.csv'
     WITH ( FORMAT='CSV',
         BATCHSIZE=1000,
         FIRSTROW=2
@@ -62,7 +61,7 @@ BEGIN TRY
     );
 
     BULK INSERT #Stage_2_2
-    FROM 'C:\Users\U_M15F4\Desktop\Metrics\results_2_2.csv'
+    FROM 'C:\Users\Александр\Desktop\metrics\results_2_2.csv'
     WITH ( FORMAT='CSV',
         BATCHSIZE=1000,
         FIRSTROW=2
@@ -86,7 +85,7 @@ BEGIN TRY
     );
 
     BULK INSERT #Stage_2_3
-    FROM 'C:\Users\U_M15F4\Desktop\Metrics\results_2_3.csv'
+    FROM 'C:\Users\Александр\Desktop\metrics\results_2_3.csv'
     WITH ( FORMAT='CSV',
         BATCHSIZE=1000,
         FIRSTROW=2
@@ -110,7 +109,7 @@ BEGIN TRY
     );
 
     BULK INSERT #Stage_2_4
-    FROM 'C:\Users\U_M15F4\Desktop\Metrics\results_2_4.csv'
+    FROM 'C:\Users\Александр\Desktop\metrics\results_2_4.csv'
     WITH ( FORMAT='CSV',
         BATCHSIZE=1000,
         FIRSTROW=2
@@ -134,7 +133,7 @@ BEGIN TRY
     );
 
     BULK INSERT #Stage_2_6
-    FROM 'C:\Users\U_M15F4\Desktop\Metrics\results_2_6.csv'
+    FROM 'C:\Users\Александр\Desktop\metrics\results_2_6.csv'
     WITH ( FORMAT='CSV',
         BATCHSIZE=1000,
         FIRSTROW=2
@@ -158,7 +157,7 @@ BEGIN TRY
     );
 
     BULK INSERT #Stage_2_7_1
-    FROM 'C:\Users\U_M15F4\Desktop\Metrics\results_2_7_1.csv'
+    FROM 'C:\Users\Александр\Desktop\metrics\results_2_7_1.csv'
     WITH ( FORMAT='CSV',
         BATCHSIZE=1000,
         FIRSTROW=2
@@ -182,7 +181,7 @@ BEGIN TRY
     );
 
     BULK INSERT #Stage_2_7_2
-    FROM 'C:\Users\U_M15F4\Desktop\Metrics\results_2_7_2.csv'
+    FROM 'C:\Users\Александр\Desktop\metrics\results_2_7_2.csv'
     WITH ( FORMAT='CSV',
         BATCHSIZE=1000,
         FIRSTROW=2
@@ -206,7 +205,7 @@ BEGIN TRY
     );
 
     BULK INSERT #Stage_2_7_3
-    FROM 'C:\Users\U_M15F4\Desktop\Metrics\results_2_7_3.csv'
+    FROM 'C:\Users\Александр\Desktop\metrics\results_2_7_3.csv'
     WITH ( FORMAT='CSV',
         BATCHSIZE=1000,
         FIRSTROW=2
@@ -230,7 +229,7 @@ BEGIN TRY
     );
 
     BULK INSERT #Stage_2_7_4
-    FROM 'C:\Users\U_M15F4\Desktop\Metrics\results_2_7_4.csv'
+    FROM 'C:\Users\Александр\Desktop\metrics\results_2_7_4.csv'
     WITH ( FORMAT='CSV',
         BATCHSIZE=1000,
         FIRSTROW=2
@@ -254,7 +253,7 @@ BEGIN TRY
     );
 
     BULK INSERT #Stage_2_7_5
-    FROM 'C:\Users\U_M15F4\Desktop\Metrics\results_2_7_5.csv'
+    FROM 'C:\Users\Александр\Desktop\metrics\results_2_7_5.csv'
     WITH ( FORMAT='CSV',
         BATCHSIZE=1000,
         FIRSTROW=2
@@ -278,7 +277,7 @@ BEGIN TRY
     );
 
     BULK INSERT #Stage_2_7_6
-    FROM 'C:\Users\U_M15F4\Desktop\Metrics\results_2_7_6.csv'
+    FROM 'C:\Users\Александр\Desktop\metrics\results_2_7_6.csv'
     WITH ( FORMAT='CSV',
         BATCHSIZE=1000,
         FIRSTROW=2
@@ -302,7 +301,7 @@ BEGIN TRY
     );
 
     BULK INSERT #Stage_2_8
-    FROM 'C:\Users\U_M15F4\Desktop\Metrics\results_2_8.csv'
+    FROM 'C:\Users\Александр\Desktop\metrics\results_2_8.csv'
     WITH ( FORMAT='CSV',
         BATCHSIZE=1000,
         FIRSTROW=2
@@ -326,7 +325,7 @@ BEGIN TRY
     );
 
     BULK INSERT #Stage_2_9
-    FROM 'C:\Users\U_M15F4\Desktop\Metrics\results_2_9.csv'
+    FROM 'C:\Users\Александр\Desktop\metrics\results_2_9.csv'
     WITH ( FORMAT='CSV',
         BATCHSIZE=1000,
         FIRSTROW=2
@@ -350,7 +349,7 @@ BEGIN TRY
     );
 
     BULK INSERT #Stage_2_10
-    FROM 'C:\Users\U_M15F4\Desktop\Metrics\results_2_10.csv'
+    FROM 'C:\Users\Александр\Desktop\metrics\results_2_10.csv'
     WITH ( FORMAT='CSV',
         BATCHSIZE=1000,
         FIRSTROW=2
@@ -367,59 +366,199 @@ BEGIN TRY
 	INSERT INTO LT.ArchiveLT (testNumberId, elapsedTime, NumberOfExecution, Label, responseCode, threadName, success, grpThreads, allThreads, URL, SampleCount, ErrorCount)
     SELECT @testNumber, t.*
     FROM (
-        SELECT	elapsedTime, CAST(SUBSTRING(Label, 0, CHARINDEX(':',Label,0)) as INT) as NumberOfExecution, (SELECT TOP 1 SUBSTRING(Label, CHARINDEX(':',Label,0)+2, LEN(Label))  FROM #Stage_2_1_2 WHERE responseMessage IS NOT NULL) as Label, responseCode, threadName, success, grpThreads, allThreads, URL, SampleCount, ErrorCount
+        SELECT	elapsedTime, 
+				CAST(SUBSTRING(Label, 0, CHARINDEX(':',Label,0)) as INT) as NumberOfExecution, 
+				(SELECT TOP 1 SUBSTRING(Label, CHARINDEX(':',Label,0)+2, LEN(Label))  FROM #Stage_2_1_2 WHERE responseMessage IS NOT NULL) as Label, 
+				responseCode, 
+				threadName, 
+				success, 
+				grpThreads, 
+				allThreads, 
+				URL, 
+				SampleCount, 
+				ErrorCount
 		FROM #Stage_2_1_2
 		WHERE responseMessage IS NULL
         UNION ALL
-        SELECT	elapsedTime, CAST(SUBSTRING(Label, 0, CHARINDEX(':',Label,0)) as INT) as NumberOfExecution, (SELECT TOP 1 SUBSTRING(Label, CHARINDEX(':',Label,0)+2, LEN(Label))  FROM #Stage_2_2 WHERE responseMessage IS NOT NULL) as Label, responseCode, threadName, success, grpThreads, allThreads, URL, SampleCount, ErrorCount
+        SELECT	elapsedTime, 
+				CAST(SUBSTRING(Label, 0, CHARINDEX(':',Label,0)) as INT) as NumberOfExecution, 
+				(SELECT TOP 1 SUBSTRING(Label, CHARINDEX(':',Label,0)+2, LEN(Label))  FROM #Stage_2_2 WHERE responseMessage IS NOT NULL) as Label, 
+				responseCode, 
+				threadName, 
+				success, 
+				grpThreads, 
+				allThreads, 
+				URL, 
+				SampleCount, 
+				ErrorCount
 		FROM #Stage_2_2
 		WHERE responseMessage IS NULL
         UNION ALL
-		SELECT	elapsedTime, CAST(SUBSTRING(Label, 0, CHARINDEX(':',Label,0)) as INT) as NumberOfExecution, (SELECT TOP 1 SUBSTRING(Label, CHARINDEX(':',Label,0)+2, LEN(Label))  FROM #Stage_2_3 WHERE responseMessage IS NOT NULL) as Label, responseCode, threadName, success, grpThreads, allThreads, URL, SampleCount, ErrorCount
+		SELECT	elapsedTime, 
+				CAST(SUBSTRING(Label, 0, CHARINDEX(':',Label,0)) as INT) as NumberOfExecution, 
+				(SELECT TOP 1 SUBSTRING(Label, CHARINDEX(':',Label,0)+2, LEN(Label))  FROM #Stage_2_3 WHERE responseMessage IS NOT NULL) as Label, 
+				responseCode, 
+				threadName, 
+				success, 
+				grpThreads, 
+				allThreads, 
+				URL, 
+				SampleCount, 
+				ErrorCount
 		FROM #Stage_2_3
 		WHERE responseMessage IS NULL
         UNION ALL
-		SELECT	elapsedTime, CAST(SUBSTRING(Label, 0, CHARINDEX(':',Label,0)) as INT) as NumberOfExecution, (SELECT TOP 1 SUBSTRING(Label, CHARINDEX(':',Label,0)+2, LEN(Label))  FROM #Stage_2_4 WHERE responseMessage IS NOT NULL) as Label, responseCode, threadName, success, grpThreads, allThreads, URL, SampleCount, ErrorCount
+		SELECT	elapsedTime, 
+				CAST(SUBSTRING(Label, 0, CHARINDEX(':',Label,0)) as INT) as NumberOfExecution, 
+				(SELECT TOP 1 SUBSTRING(Label, CHARINDEX(':',Label,0)+2, LEN(Label))  FROM #Stage_2_4 WHERE responseMessage IS NOT NULL) as Label, 
+				responseCode, 
+				threadName, 
+				success, 
+				grpThreads,
+				allThreads, 
+				URL, 
+				SampleCount, 
+				ErrorCount
 		FROM #Stage_2_4
 		WHERE responseMessage IS NULL
         UNION ALL
-		SELECT	elapsedTime, CAST(SUBSTRING(Label, 0, CHARINDEX(':',Label,0)) as INT) as NumberOfExecution, (SELECT TOP 1 SUBSTRING(Label, CHARINDEX(':',Label,0)+2, LEN(Label))  FROM #Stage_2_6 WHERE responseMessage IS NOT NULL) as Label, responseCode, threadName, success, grpThreads, allThreads, URL, SampleCount, ErrorCount
+		SELECT	elapsedTime, 
+				CAST(SUBSTRING(Label, 0, CHARINDEX(':',Label,0)) as INT) as NumberOfExecution, 
+				(SELECT TOP 1 SUBSTRING(Label, CHARINDEX(':',Label,0)+2, LEN(Label))  FROM #Stage_2_6 WHERE responseMessage IS NOT NULL) as Label, 
+				responseCode, 
+				threadName, 
+				success, 
+				grpThreads, 
+				allThreads, 
+				URL, 
+				SampleCount, 
+				ErrorCount
 		FROM #Stage_2_6
 		WHERE responseMessage IS NULL
         UNION ALL
-		SELECT	elapsedTime, CAST(SUBSTRING(Label, 0, CHARINDEX(':',Label,0)) as INT) as NumberOfExecution, (SELECT TOP 1 SUBSTRING(Label, CHARINDEX(':',Label,0)+2, LEN(Label))  FROM #Stage_2_7_1 WHERE responseMessage IS NOT NULL) as Label, responseCode, threadName, success, grpThreads, allThreads, URL, SampleCount, ErrorCount
+		SELECT	elapsedTime, 
+				CAST(SUBSTRING(Label, 0, CHARINDEX(':',Label,0)) as INT) as NumberOfExecution, 
+				(SELECT TOP 1 SUBSTRING(Label, CHARINDEX(':',Label,0)+2, LEN(Label))  FROM #Stage_2_7_1 WHERE responseMessage IS NOT NULL) as Label, 
+				responseCode, 
+				threadName, 
+				success, 
+				grpThreads, 
+				allThreads, 
+				URL, 
+				SampleCount, 
+				ErrorCount
 		FROM #Stage_2_7_1
 		WHERE responseMessage IS NULL
         UNION ALL
-		SELECT	elapsedTime, CAST(SUBSTRING(Label, 0, CHARINDEX(':',Label,0)) as INT) as NumberOfExecution, (SELECT TOP 1 SUBSTRING(Label, CHARINDEX(':',Label,0)+2, LEN(Label))  FROM #Stage_2_7_2 WHERE responseMessage IS NOT NULL) as Label, responseCode, threadName, success, grpThreads, allThreads, URL, SampleCount, ErrorCount
+		SELECT	elapsedTime, 
+				CAST(SUBSTRING(Label, 0, CHARINDEX(':',Label,0)) as INT) as NumberOfExecution, 
+				(SELECT TOP 1 SUBSTRING(Label, CHARINDEX(':',Label,0)+2, LEN(Label))  FROM #Stage_2_7_2 WHERE responseMessage IS NOT NULL) as Label, 
+				responseCode, 
+				threadName, 
+				success, 
+				grpThreads, 
+				allThreads, 
+				URL, 
+				SampleCount, 
+				ErrorCount
 		FROM #Stage_2_7_2
 		WHERE responseMessage IS NULL
         UNION ALL
-		SELECT	elapsedTime, CAST(SUBSTRING(Label, 0, CHARINDEX(':',Label,0)) as INT) as NumberOfExecution, (SELECT TOP 1 SUBSTRING(Label, CHARINDEX(':',Label,0)+2, LEN(Label))  FROM #Stage_2_7_3 WHERE responseMessage IS NOT NULL) as Label, responseCode, threadName, success, grpThreads, allThreads, URL, SampleCount, ErrorCount
+		SELECT	elapsedTime, 
+				CAST(SUBSTRING(Label, 0, CHARINDEX(':',Label,0)) as INT) as NumberOfExecution, 
+				(SELECT TOP 1 SUBSTRING(Label, CHARINDEX(':',Label,0)+2, LEN(Label))  FROM #Stage_2_7_3 WHERE responseMessage IS NOT NULL) as Label, 
+				responseCode, 
+				threadName, 
+				success, 
+				grpThreads, 
+				allThreads, 
+				URL, 
+				SampleCount, 
+				ErrorCount
 		FROM #Stage_2_7_3
 		WHERE responseMessage IS NULL
         UNION ALL
-		SELECT	elapsedTime, CAST(SUBSTRING(Label, 0, CHARINDEX(':',Label,0)) as INT) as NumberOfExecution, (SELECT TOP 1 SUBSTRING(Label, CHARINDEX(':',Label,0)+2, LEN(Label))  FROM #Stage_2_7_4 WHERE responseMessage IS NOT NULL) as Label, responseCode, threadName, success, grpThreads, allThreads, URL, SampleCount, ErrorCount
+		SELECT	elapsedTime, 
+				CAST(SUBSTRING(Label, 0, CHARINDEX(':',Label,0)) as INT) as NumberOfExecution, 
+				(SELECT TOP 1 SUBSTRING(Label, CHARINDEX(':',Label,0)+2, LEN(Label))  FROM #Stage_2_7_4 WHERE responseMessage IS NOT NULL) as Label, 
+				responseCode, 
+				threadName, 
+				success, 
+				grpThreads, 
+				allThreads, 
+				URL, 
+				SampleCount, 
+				ErrorCount
 		FROM #Stage_2_7_4
 		WHERE responseMessage IS NULL
         UNION ALL
-		SELECT	elapsedTime, CAST(SUBSTRING(Label, 0, CHARINDEX(':',Label,0)) as INT) as NumberOfExecution, (SELECT TOP 1 SUBSTRING(Label, CHARINDEX(':',Label,0)+2, LEN(Label))  FROM #Stage_2_7_5 WHERE responseMessage IS NOT NULL) as Label, responseCode, threadName, success, grpThreads, allThreads, URL, SampleCount, ErrorCount
+		SELECT	elapsedTime, 
+				CAST(SUBSTRING(Label, 0, CHARINDEX(':',Label,0)) as INT) as NumberOfExecution, 
+				(SELECT TOP 1 SUBSTRING(Label, CHARINDEX(':',Label,0)+2, LEN(Label))  FROM #Stage_2_7_5 WHERE responseMessage IS NOT NULL) as Label, 
+				responseCode, 
+				threadName, 
+				success, 
+				grpThreads, 
+				allThreads, 
+				URL, 
+				SampleCount, 
+				ErrorCount
 		FROM #Stage_2_7_5
 		WHERE responseMessage IS NULL
         UNION ALL
-		SELECT	elapsedTime, CAST(SUBSTRING(Label, 0, CHARINDEX(':',Label,0)) as INT) as NumberOfExecution, (SELECT TOP 1 SUBSTRING(Label, CHARINDEX(':',Label,0)+2, LEN(Label))  FROM #Stage_2_7_6 WHERE responseMessage IS NOT NULL) as Label, responseCode, threadName, success, grpThreads, allThreads, URL, SampleCount, ErrorCount
+		SELECT	elapsedTime, 
+				CAST(SUBSTRING(Label, 0, CHARINDEX(':',Label,0)) as INT) as NumberOfExecution, 
+				(SELECT TOP 1 SUBSTRING(Label, CHARINDEX(':',Label,0)+2, LEN(Label))  FROM #Stage_2_7_6 WHERE responseMessage IS NOT NULL) as Label, 
+				responseCode, 
+				threadName, 
+				success, 
+				grpThreads, 
+				allThreads, 
+				URL, 
+				SampleCount, 
+				ErrorCount
 		FROM #Stage_2_7_6
 		WHERE responseMessage IS NULL
         UNION ALL
-		SELECT	elapsedTime, CAST(SUBSTRING(Label, 0, CHARINDEX(':',Label,0)) as INT) as NumberOfExecution, (SELECT TOP 1 SUBSTRING(Label, CHARINDEX(':',Label,0)+2, LEN(Label))  FROM #Stage_2_8 WHERE responseMessage IS NOT NULL) as Label, responseCode, threadName, success, grpThreads, allThreads, URL, SampleCount, ErrorCount
+		SELECT	elapsedTime, 
+				CAST(SUBSTRING(Label, 0, CHARINDEX(':',Label,0)) as INT) as NumberOfExecution, 
+				(SELECT TOP 1 SUBSTRING(Label, CHARINDEX(':',Label,0)+2, LEN(Label))  FROM #Stage_2_8 WHERE responseMessage IS NOT NULL) as Label, 
+				responseCode, 
+				threadName, 
+				success, 
+				grpThreads, 
+				allThreads, 
+				URL, 
+				SampleCount, 
+				ErrorCount
 		FROM #Stage_2_8
 		WHERE responseMessage IS NULL
         UNION ALL
-		SELECT	elapsedTime, CAST(SUBSTRING(Label, 0, CHARINDEX(':',Label,0)) as INT) as NumberOfExecution, (SELECT TOP 1 SUBSTRING(Label, CHARINDEX(':',Label,0)+2, LEN(Label))  FROM #Stage_2_9 WHERE responseMessage IS NOT NULL) as Label, responseCode, threadName, success, grpThreads, allThreads, URL, SampleCount, ErrorCount
+		SELECT	elapsedTime, 
+				CAST(SUBSTRING(Label, 0, CHARINDEX(':',Label,0)) as INT) as NumberOfExecution, 
+				(SELECT TOP 1 SUBSTRING(Label, CHARINDEX(':',Label,0)+2, LEN(Label))  FROM #Stage_2_9 WHERE responseMessage IS NOT NULL) as Label, 
+				responseCode, 
+				threadName, 
+				success, 
+				grpThreads, 
+				allThreads, 
+				URL, 
+				SampleCount, 
+				ErrorCount
 		FROM #Stage_2_9
 		WHERE responseMessage IS NULL
         UNION ALL
-		SELECT	elapsedTime, CAST(SUBSTRING(Label, 0, CHARINDEX(':',Label,0)) as INT) as NumberOfExecution, (SELECT TOP 1 SUBSTRING(Label, CHARINDEX(':',Label,0)+2, LEN(Label))  FROM #Stage_2_10 WHERE responseMessage IS NOT NULL) as Label, responseCode, threadName, success, grpThreads, allThreads, URL, SampleCount, ErrorCount
+		SELECT	elapsedTime, 
+				CAST(SUBSTRING(Label, 0, CHARINDEX(':',Label,0)) as INT) as NumberOfExecution, 
+				(SELECT TOP 1 SUBSTRING(Label, CHARINDEX(':',Label,0)+2, LEN(Label))  FROM #Stage_2_10 WHERE responseMessage IS NOT NULL) as Label, 
+				responseCode, 
+				threadName, 
+				success, 
+				grpThreads, 
+				allThreads, 
+				URL, 
+				SampleCount, 
+				ErrorCount
 		FROM #Stage_2_10
 		WHERE responseMessage IS NULL
     ) AS t;
@@ -708,6 +847,3 @@ BEGIN CATCH
 	RAISERROR(@errorMessage, 16, 1);
 END CATCH
 END;
-GO
-
-
