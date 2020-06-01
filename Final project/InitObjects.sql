@@ -853,3 +853,28 @@ GO
 
 EXEC sp_addextendedproperty @name = N'MS_Description', @value = N'Summary results for related tests', @level0type = N'SCHEMA', @level0name = N'LT', @level1type = N'TABLE', @level1name = N'Scores_AGR';
 GO
+
+CREATE VIEW LT.TestResultInfo
+AS
+SELECT	si.projectId, si.EnvId, si.testNumberId, si.Duration, si.RampUp, si.NumberOfThreads,
+		agr.NameOfTest,
+		agr.NumberOfThreads as RecievedNumberOfThreads,
+		agr.[AverageElapsedTime, ms],
+		agr.[MinElapsedTime, ms],
+		agr.[MaxElapsedTime, ms],
+		agr.CountOfExecutions,
+		agr.CountOfFails,
+		CASE 
+			WHEN agr.NameOfTest LIKE N'2.1.%' AND agr.[AverageElapsedTime, ms] <= (SELECT TOP 1 ti.TargetValue FROM LT.TargetInfo ti WHERE SUBSTRING(ti.TargetName,1,3)=SUBSTRING(agr.NameOfTest, 1, 3) AND ti.projectId=si.projectId) THEN 'Passed'
+			WHEN agr.NameOfTest LIKE N'2.2%' AND agr.[AverageElapsedTime, ms] <= (SELECT TOP 1 ti.TargetValue FROM LT.TargetInfo ti WHERE SUBSTRING(ti.TargetName,1,3)=SUBSTRING(agr.NameOfTest, 1, 3) AND ti.projectId=si.projectId) THEN 'Passed'
+			WHEN agr.NameOfTest LIKE N'2.3%' AND agr.[AverageElapsedTime, ms] <= (SELECT TOP 1 ti.TargetValue FROM LT.TargetInfo ti WHERE SUBSTRING(ti.TargetName,1,3)=SUBSTRING(agr.NameOfTest, 1, 3) AND ti.projectId=si.projectId) THEN 'Passed'
+			WHEN agr.NameOfTest LIKE N'2.4%' AND agr.[AverageElapsedTime, ms] <= (SELECT TOP 1 ti.TargetValue FROM LT.TargetInfo ti WHERE SUBSTRING(ti.TargetName,1,3)=SUBSTRING(agr.NameOfTest, 1, 3) AND ti.projectId=si.projectId) THEN 'Passed'
+			WHEN agr.NameOfTest LIKE N'2.6%' AND agr.[AverageElapsedTime, ms] <= (SELECT TOP 1 ti.TargetValue FROM LT.TargetInfo ti WHERE SUBSTRING(ti.TargetName,1,3)=SUBSTRING(agr.NameOfTest, 1, 3) AND ti.projectId=si.projectId) THEN 'Passed'
+			WHEN agr.NameOfTest LIKE N'2.7.%' AND agr.[AverageElapsedTime, ms] <= (SELECT TOP 1 ti.TargetValue FROM LT.TargetInfo ti WHERE SUBSTRING(ti.TargetName,1,3)=SUBSTRING(agr.NameOfTest, 1, 3) AND ti.projectId=si.projectId) THEN 'Passed'
+			WHEN agr.NameOfTest LIKE N'2.8%' AND agr.[AverageElapsedTime, ms] <= (SELECT TOP 1 ti.TargetValue FROM LT.TargetInfo ti WHERE SUBSTRING(ti.TargetName,1,3)=SUBSTRING(agr.NameOfTest, 1, 3) AND ti.projectId=si.projectId) THEN 'Passed'
+			WHEN agr.NameOfTest LIKE N'2.9%' AND agr.[AverageElapsedTime, ms] <= (SELECT TOP 1 ti.TargetValue FROM LT.TargetInfo ti WHERE SUBSTRING(ti.TargetName,1,3)=SUBSTRING(agr.NameOfTest, 1, 3) AND ti.projectId=si.projectId) THEN 'Passed'
+			WHEN agr.NameOfTest LIKE N'2.10%' AND agr.[AverageElapsedTime, ms] <= (SELECT TOP 1 ti.TargetValue FROM LT.TargetInfo ti WHERE SUBSTRING(ti.TargetName,1,3)=SUBSTRING(agr.NameOfTest, 1, 3) AND ti.projectId=si.projectId) THEN 'Passed'
+			ELSE 'Not Passed'
+		END AS Summary
+FROM LT.ScenarioInfo si
+JOIN LT.Scores_AGR agr ON si.testNumberId=agr.testNumberId;

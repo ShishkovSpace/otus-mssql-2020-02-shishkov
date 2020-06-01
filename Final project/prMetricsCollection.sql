@@ -826,7 +826,7 @@ BEGIN TRY
 	DROP TABLE #Stage_2_9;
 	DROP TABLE #Stage_2_10;
 
-    SELECT * FROM LT.fnTestSummary(@testNumber);
+    SELECT * FROM LT.fnTestSummary(@testNumber, @ProjectId);
 
 	RETURN;
 END TRY
