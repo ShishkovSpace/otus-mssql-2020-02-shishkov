@@ -8,7 +8,9 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 
-CREATE TABLE [LT].[TestResultsCube](
+DROP TABLE IF EXISTS [LT].[TestResultsFact];
+GO
+CREATE TABLE [LT].[TestResultsFact](
 	[resultId] [bigint] NOT NULL,
 	[projectId] [int] NOT NULL,
 	[EnvId] [int] NOT NULL,
@@ -23,7 +25,11 @@ CREATE TABLE [LT].[TestResultsCube](
 	[MaxElapsedTime, ms] [int] NULL,
 	[CountOfExecutions] [int] NULL,
 	[CountOfFails] [int] NULL,
-	[Summary] [varchar](10) NOT NULL
+	[Summary] [varchar](10) NOT NULL,
+ CONSTRAINT [PK_resultId_Fact] PRIMARY KEY CLUSTERED 
+(
+	[resultId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
 
@@ -53,15 +59,72 @@ FROM LT.ScenarioInfo si
 JOIN LT.Scores_AGR agr ON si.testNumberId=agr.testNumberId;
 
 GO
-ALTER TABLE LT.TestResultsCube
-ADD CONSTRAINT [PK_resultId_Cube] PRIMARY KEY CLUSTERED ([resultId] ASC);
+ALTER TABLE [LT].[TestResultsFact]  WITH CHECK ADD  CONSTRAINT [FK_envId_Fact] FOREIGN KEY([EnvId])
+REFERENCES [LT].[DimEnvInfo] ([EnvId])
 GO
-ALTER TABLE LT.TestResultsCube
-ADD CONSTRAINT [FK_projectId_Cube] FOREIGN KEY ([projectId])  REFERENCES [LT].[ProjectInfo]([projectId]);
-GO
-ALTER TABLE LT.TestResultsCube
-ADD CONSTRAINT [FK_envId_Cube] FOREIGN KEY ([EnvId])  REFERENCES [LT].[EnvInfo]([EnvId]);
-GO
-ALTER TABLE LT.TestResultsCube
-ADD CONSTRAINT [FK_testNumberd_Cube] FOREIGN KEY ([testNumberId])  REFERENCES [LT].[ScenarioInfo]([testNumberId]);
 
+ALTER TABLE [LT].[TestResultsFact] CHECK CONSTRAINT [FK_envId_Fact]
+GO
+
+ALTER TABLE [LT].[TestResultsFact]  WITH CHECK ADD  CONSTRAINT [FK_projectId_Fact] FOREIGN KEY([projectId])
+REFERENCES [LT].[DimProjectInfo] ([projectId])
+GO
+
+ALTER TABLE [LT].[TestResultsFact] CHECK CONSTRAINT [FK_projectId_Fact]
+GO
+
+ALTER TABLE [LT].[TestResultsFact]  WITH CHECK ADD  CONSTRAINT [FK_testNumberd_Fact] FOREIGN KEY([testNumberId])
+REFERENCES [LT].[DimScenarioInfo] ([testNumberId])
+GO
+
+ALTER TABLE [LT].[TestResultsFact] CHECK CONSTRAINT [FK_testNumberd_Fact]
+GO
+
+/****** Object:  Table [LT].[ProjectInfo]    Script Date: 09.06.2020 18:13:32 ******/
+CREATE TABLE [LT].[DimProjectInfo](
+	[projectId] [int] NOT NULL,
+	[AppMajorVersion] [int] NOT NULL,
+	[AppMinorVersion] [int] NOT NULL,
+ CONSTRAINT [PK_DimProjectInfo] PRIMARY KEY CLUSTERED 
+(
+	[projectId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+
+EXEC sys.sp_addextendedproperty @name=N'MS_Description', @value=N'Project link' , @level0type=N'SCHEMA',@level0name=N'LT', @level1type=N'TABLE',@level1name=N'DimProjectInfo'
+GO
+
+/****** Object:  Table [LT].[EnvInfo]    Script Date: 09.06.2020 18:16:17 ******/
+CREATE TABLE [LT].[DimEnvInfo](
+	[EnvId] [int] IDENTITY(1,1) NOT NULL,
+	[NumberOfInstances] [int] NOT NULL,
+ CONSTRAINT [PK_DimEnvInfo] PRIMARY KEY CLUSTERED 
+(
+	[EnvId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+
+EXEC sys.sp_addextendedproperty @name=N'MS_Description', @value=N'Info about conditions and environment for scenarios' , @level0type=N'SCHEMA',@level0name=N'LT', @level1type=N'TABLE',@level1name=N'DimEnvInfo'
+GO
+
+/****** Object:  Table [LT].[ScenarioInfo]    Script Date: 09.06.2020 18:18:02 ******/
+CREATE TABLE [LT].[DimScenarioInfo](
+	[testNumberId] [int] IDENTITY(1,1) NOT NULL,
+	[Duration] [int] NOT NULL,
+	[RampUp] [int] NOT NULL,
+	[NumberOfThreads] [int] NOT NULL,
+	[Date] [datetime2](7) NOT NULL,
+ CONSTRAINT [PK_DimScenarioInfo] PRIMARY KEY CLUSTERED 
+(
+	[testNumberId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [LT].[DimScenarioInfo] ADD  CONSTRAINT [DF_DimScenarioInfo_Date]  DEFAULT (getdate()) FOR [Date]
+GO
+
+EXEC sys.sp_addextendedproperty @name=N'MS_Description', @value=N'Info for related scenarios' , @level0type=N'SCHEMA',@level0name=N'LT', @level1type=N'TABLE',@level1name=N'DimScenarioInfo'
+GO
