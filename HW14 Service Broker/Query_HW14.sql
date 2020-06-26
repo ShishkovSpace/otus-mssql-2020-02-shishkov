@@ -136,7 +136,7 @@ BEGIN
 
 	SET @xml = CAST(@Message AS XML);
 
-	--�������� CustomerID �� xml
+	-- Get Data for report from xml
 	SELECT	@CustomerID = R.Inv.value('@CustomerID','INT'),
 			@startDt = R.Inv.value('@startDate','DATE'),
 			@endDt = R.Inv.value('@endDate', 'DATE')
@@ -166,7 +166,7 @@ CREATE PROCEDURE Sales.ConfirmReport
 AS
 BEGIN
 	--Receiving Reply Message from the Target.	
-	DECLARE @InitiatorReplyDlgHandle UNIQUEIDENTIFIER, --����� �������
+	DECLARE @InitiatorReplyDlgHandle UNIQUEIDENTIFIER, 
 			@ReplyReceivedMessage NVARCHAR(1000) 
 	
 	BEGIN TRAN; 
