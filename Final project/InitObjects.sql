@@ -1,168 +1,222 @@
-USE [LoadTestResults];
+USE master;
 GO
 
 /*
 * Create objects for metrics
 */
---CREATE DATABASE [LoadTestResults];
+--CREATE DATABASE [LoadTestResults20];
 
 GO
---CREATE SCHEMA LT;
+/* Additional filegroups for partitions */
+/*
+ALTER DATABASE LoadTestResults20 
+	ADD FILEGROUP Partitions_ScoresLT;
 
 GO
-DROP TABLE IF EXISTS [LT].[Scores_AGR];
-DROP TABLE IF EXISTS [LT].[ScoresLT_2_10];
-DROP TABLE IF EXISTS [LT].[ScoresLT_2_9];
-DROP TABLE IF EXISTS [LT].[ScoresLT_2_8];
-DROP TABLE IF EXISTS [LT].[ScoresLT_2_7_6];
-DROP TABLE IF EXISTS [LT].[ScoresLT_2_7_5];
-DROP TABLE IF EXISTS [LT].[ScoresLT_2_7_4];
-DROP TABLE IF EXISTS [LT].[ScoresLT_2_7_3];
-DROP TABLE IF EXISTS [LT].[ScoresLT_2_7_2];
-DROP TABLE IF EXISTS [LT].[ScoresLT_2_7_1];
-DROP TABLE IF EXISTS [LT].[ScoresLT_2_6];
-DROP TABLE IF EXISTS [LT].[ScoresLT_2_4];
-DROP TABLE IF EXISTS [LT].[ScoresLT_2_3];
-DROP TABLE IF EXISTS [LT].[ScoresLT_2_2];
-DROP TABLE IF EXISTS [LT].[ScoresLT_2_1_2];
-DROP TABLE IF EXISTS [LT].[ArchiveLT];
-DROP TABLE IF EXISTS [LT].[TargetInfo];
-DROP TABLE IF EXISTS [LT].[ScenarioInfo];
-DROP TABLE IF EXISTS [LT].[EnvInfo];
-DROP TABLE IF EXISTS [LT].[ProjectInfo];
+ALTER DATABASE LoadTestResults20 
+	ADD FILE
+	(
+		NAME = Partitions_ScoresLT,
+		FILENAME = 'C:\Program Files\Microsoft SQL Server\MSSQL15.SQLSERVERLOCAL\MSSQL\DATA\Partitions_ScoresLT.ndf',
+		SIZE = 50MB,
+		MAXSIZE = 1024MB,
+		FILEGROWTH = 50MB
+	)
+TO FILEGROUP Partitions_ScoresLT;
+
+GO
+ALTER DATABASE LoadTestResults20 
+	ADD FILEGROUP Partitions_ArchiveLT;
+
+GO
+ALTER DATABASE LoadTestResults20 
+	ADD FILE
+	(
+		NAME = Partitions_ArchiveLT,
+		FILENAME = 'C:\Program Files\Microsoft SQL Server\MSSQL15.SQLSERVERLOCAL\MSSQL\DATA\Partitions_ArchiveLT.ndf',
+		SIZE = 50MB,
+		MAXSIZE = 1024MB,
+		FILEGROWTH = 50MB
+	)
+TO FILEGROUP Partitions_ArchiveLT;
+*/
+GO
+USE [LoadTestResults20];
+
+GO
+--CREATE SCHEMA DWH;
+
+GO
+DROP TABLE IF EXISTS [DWH].[TestSummary];
+DROP TABLE IF EXISTS [DWH].[ScoresLT];
+DROP TABLE IF EXISTS [DWH].[ArchiveLT];
 GO
 
-/************************************** [LT].[ProjectInfo]*/
+ALTER TABLE DWH.TargetInfo DROP CONSTRAINT FK_projectId_Target;
+GO
 
-IF NOT EXISTS (SELECT * FROM sys.tables t join sys.schemas s ON (t.schema_id = s.schema_id) WHERE s.name='LT' and t.name='ProjectInfo')
-CREATE TABLE [LT].[ProjectInfo]
+ALTER TABLE DWH.TargetInfo SET ( SYSTEM_VERSIONING = OFF);
+GO
+
+IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[DWH].[TargetInfo]') AND type in (N'U'))
+DROP TABLE DWH.TargetInfo;
+GO
+
+IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[DWH].[TargetInfo_History]') AND type in (N'U'))
+DROP TABLE DWH.TargetInfo_History;
+GO
+DROP TABLE IF EXISTS DWH.ScenarioInfo;
+DROP TABLE IF EXISTS DWH.EnvInfo;
+GO
+
+ALTER TABLE DWH.ProjectInfo SET ( SYSTEM_VERSIONING = OFF );
+GO
+
+IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[DWH].[ProjectInfo]') AND type in (N'U'))
+DROP TABLE DWH.ProjectInfo;
+GO
+
+IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[DWH].[ProjectInfo_History]') AND type in (N'U'))
+DROP TABLE DWH.ProjectInfo_History;
+GO
+
+/************************************** [DWH].[ProjectInfo]*/
+
+IF NOT EXISTS (SELECT * FROM sys.tables t join sys.schemas s ON (t.schema_id = s.schema_id) WHERE s.name='DWH' and t.name='ProjectInfo')
+CREATE TABLE [DWH].[ProjectInfo]
 (
  [projectId]       int NOT NULL ,
  [projectName]     nvarchar(100) NOT NULL ,
- [AppMajorVersion] int NOT NULL ,
- [AppMinorVersion] int NOT NULL ,
- [BuildValidFrom]  datetime2(7) NOT NULL CONSTRAINT [DF_ProjectInfo_BuildValidFrom] DEFAULT GETDATE() ,
- [BuildValidTo]    datetime2(7) NULL ,
+ [appMajorVersion] int NOT NULL ,
+ [appMinorVersion] int NOT NULL ,
+ [ValidFrom]  datetime2(2) GENERATED ALWAYS AS ROW START NOT NULL ,
+ [ValidTo]    datetime2(2) GENERATED ALWAYS AS ROW END NOT NULL ,
+ PERIOD FOR SYSTEM_TIME ([ValidFrom], [ValidTo]) ,
 
  CONSTRAINT [PK_ProjectInfo] PRIMARY KEY CLUSTERED ([projectId] ASC)
-);
+) WITH ( SYSTEM_VERSIONING = ON ( HISTORY_TABLE = [DWH].[ProjectInfo_History] ) );
 GO
 
-EXEC sp_addextendedproperty @name = N'MS_Description', @value = N'Project link', @level0type = N'SCHEMA', @level0name = N'LT', @level1type = N'TABLE', @level1name = N'ProjectInfo';
+EXEC sp_addextendedproperty @name = N'MS_Description', @value = N'Project link', @level0type = N'SCHEMA', @level0name = N'DWH', @level1type = N'TABLE', @level1name = N'ProjectInfo';
 
 GO
 
-/*************************************** [LT].[EnvInfo]*/
+/*************************************** [DWH].[EnvInfo]*/
 
-IF NOT EXISTS (SELECT * FROM sys.tables t join sys.schemas s ON (t.schema_id = s.schema_id) WHERE s.name='LT' and t.name='EnvInfo')
-CREATE TABLE [LT].[EnvInfo]
+IF NOT EXISTS (SELECT * FROM sys.tables t join sys.schemas s ON (t.schema_id = s.schema_id) WHERE s.name='DWH' and t.name='EnvInfo')
+CREATE TABLE [DWH].[EnvInfo]
 (
- [EnvId]             int IDENTITY(1, 1) NOT NULL ,
+ [envId]             int IDENTITY(1, 1) NOT NULL ,
  [projectId]         int NOT NULL ,
- [NumberOfInstances] int NOT NULL ,
- [IsInternal]        bit NOT NULL CONSTRAINT [DF_EnvInfo_IsInternal] DEFAULT 0 ,
- [IsAWS]             bit NOT NULL CONSTRAINT [DF_EnvInfo_IsAWS] DEFAULT 0 ,
- [EnvDescription]	 nvarchar(300) NULL ,
+ [numberOfInstances] int NOT NULL ,
+ [isInternal]        bit NOT NULL CONSTRAINT [DF_EnvInfo_IsInternal] DEFAULT 0 ,
+ [isAWS]             bit NOT NULL CONSTRAINT [DF_EnvInfo_IsAWS] DEFAULT 0 ,
+ [envDescription]	 nvarchar(300) NULL ,
 
  CONSTRAINT [PK_EnvInfo] PRIMARY KEY CLUSTERED ([EnvId] ASC),
- CONSTRAINT [FK_projectId_Env] FOREIGN KEY ([projectId])  REFERENCES [LT].[ProjectInfo]([projectId])
+ CONSTRAINT [FK_projectId_Env] FOREIGN KEY ([projectId])  REFERENCES [DWH].[ProjectInfo]([projectId])
 );
 GO
 
-EXEC sp_addextendedproperty @name = N'MS_Description', @value = N'Info about conditions and environment for scenarios', @level0type = N'SCHEMA', @level0name = N'LT', @level1type = N'TABLE', @level1name = N'EnvInfo';
+EXEC sp_addextendedproperty @name = N'MS_Description', @value = N'Info about conditions and environment for scenarios', @level0type = N'SCHEMA', @level0name = N'DWH', @level1type = N'TABLE', @level1name = N'EnvInfo';
 
 GO
 
-/*************************************** [LT].[ScenarioInfo]*/
+/*************************************** [DWH].[ScenarioInfo]*/
 
-IF NOT EXISTS (SELECT * FROM sys.tables t join sys.schemas s ON (t.schema_id = s.schema_id) WHERE s.name='LT' and t.name='ScenarioInfo')
-CREATE TABLE [LT].[ScenarioInfo]
+IF NOT EXISTS (SELECT * FROM sys.tables t join sys.schemas s ON (t.schema_id = s.schema_id) WHERE s.name='DWH' and t.name='ScenarioInfo')
+CREATE TABLE [DWH].[ScenarioInfo]
 (
  [testNumberId]    int IDENTITY(1,1) NOT NULL ,
  [projectId]       int NOT NULL ,
- [EnvId]           int NOT NULL ,
- [Duration]        int NOT NULL ,
- [RampUp]          int NOT NULL ,
- [NumberOfThreads] int NOT NULL ,
- [Date]            datetime2(7) NOT NULL CONSTRAINT [DF_ScenarioInfo_Date] DEFAULT GETDATE() ,
+ [envId]           int NOT NULL ,
+ [duration]        int NOT NULL ,
+ [rampUp]          int NOT NULL ,
+ [numberOfThreads] int NOT NULL ,
+ [date]            datetime2(7) NOT NULL CONSTRAINT [DF_ScenarioInfo_Date] DEFAULT GETDATE() ,
 
  CONSTRAINT [PK_ScenarioInfo] PRIMARY KEY CLUSTERED ([testNumberId] ASC),
- CONSTRAINT [FK_EnvId] FOREIGN KEY ([EnvId])  REFERENCES [LT].[EnvInfo]([EnvId]),
- CONSTRAINT [FK_projectId] FOREIGN KEY ([projectId])  REFERENCES [LT].[ProjectInfo]([projectId])
+ CONSTRAINT [FK_EnvId] FOREIGN KEY ([EnvId])  REFERENCES [DWH].[EnvInfo]([EnvId]),
+ CONSTRAINT [FK_projectId] FOREIGN KEY ([projectId])  REFERENCES [DWH].[ProjectInfo]([projectId])
 );
 GO
 
-EXEC sp_addextendedproperty @name = N'MS_Description', @value = N'Info for related scenarios', @level0type = N'SCHEMA', @level0name = N'LT', @level1type = N'TABLE', @level1name = N'ScenarioInfo';
+EXEC sp_addextendedproperty @name = N'MS_Description', @value = N'Info for related scenarios', @level0type = N'SCHEMA', @level0name = N'DWH', @level1type = N'TABLE', @level1name = N'ScenarioInfo';
 
 GO
 
-/*************************************** [LT].[TargetInfo]*/
+/*************************************** [DWH].[TargetInfo]*/
 
-IF NOT EXISTS (SELECT * FROM sys.tables t join sys.schemas s ON (t.schema_id = s.schema_id) WHERE s.name='LT' and t.name='TargetInfo')
-CREATE TABLE [LT].[TargetInfo]
+IF NOT EXISTS (SELECT * FROM sys.tables t join sys.schemas s ON (t.schema_id = s.schema_id) WHERE s.name='DWH' and t.name='TargetInfo')
+CREATE TABLE [DWH].[TargetInfo]
 (
- [TargetId]    int IDENTITY(1, 1) NOT NULL ,
+ [targetId]    int IDENTITY(1, 1) NOT NULL ,
  [projectId]   int NOT NULL ,
- [TargetName]  nvarchar(100) NOT NULL ,
- [TargetValue] int NOT NULL ,
+ [targetName]  nvarchar(100) NOT NULL ,
+ [targetValue] int NOT NULL ,
+ [ValidFrom]  datetime2(2) GENERATED ALWAYS AS ROW START NOT NULL ,
+ [ValidTo]    datetime2(2) GENERATED ALWAYS AS ROW END NOT NULL ,
+ PERIOD FOR SYSTEM_TIME ([ValidFrom], [ValidTo]) ,
 
  CONSTRAINT [PK_TargetInfo] PRIMARY KEY CLUSTERED ([TargetId] ASC),
- CONSTRAINT [FK_projectId_Target] FOREIGN KEY ([projectId])  REFERENCES [LT].[ProjectInfo]([projectId])
-);
+ CONSTRAINT [FK_projectId_Target] FOREIGN KEY ([projectId])  REFERENCES [DWH].[ProjectInfo]([projectId])
+) WITH ( SYSTEM_VERSIONING = ON ( HISTORY_TABLE = [DWH].[TargetInfo_History] ) );
 GO
 
-EXEC sp_addextendedproperty @name = N'MS_Description', @value = N'Target values for criterions', @level0type = N'SCHEMA', @level0name = N'LT', @level1type = N'TABLE', @level1name = N'TargetInfo';
+EXEC sp_addextendedproperty @name = N'MS_Description', @value = N'Target values for criterions', @level0type = N'SCHEMA', @level0name = N'DWH', @level1type = N'TABLE', @level1name = N'TargetInfo';
 
 GO
 
 /*************************************** [LT].[ArchiveLT]*/
 
-IF NOT EXISTS (SELECT * FROM sys.tables t join sys.schemas s ON (t.schema_id = s.schema_id) WHERE s.name='LT' and t.name='ArchiveLT')
-CREATE TABLE [LT].[ArchiveLT]
+IF NOT EXISTS (SELECT * FROM sys.tables t join sys.schemas s ON (t.schema_id = s.schema_id) WHERE s.name='DWH' and t.name='ArchiveLT')
+CREATE TABLE [DWH].[ArchiveLT]
 (
  [id]           int IDENTITY (1, 1) NOT NULL ,
+ [projectId]	int NOT NULL,
  [testNumberId] int NOT NULL ,
  [elapsedTime]  int NULL ,
- [NumberOfExecution] int NULL,
- [Label]        nvarchar(200) NULL ,
+ [numberOfExecution] int NULL,
+ [label]        nvarchar(200) NULL ,
  [responseCode] int NULL ,
  [threadName]   nvarchar(100) NULL ,
  [success]      nvarchar(10) NULL ,
  [grpThreads]   int NULL ,
  [allThreads]   int NULL ,
  [URL]          nvarchar(1000) NULL ,
- [SampleCount]  int NULL ,
- [ErrorCount]   int NULL ,
- [Date]         datetime2(7) NOT NULL CONSTRAINT [DF_ArchiveLT_Date] DEFAULT GETDATE() ,
+ [sampleCount]  int NULL ,
+ [errorCount]   int NULL ,
+ [date]         datetime2(7) NOT NULL CONSTRAINT [DF_ArchiveLT_Date] DEFAULT GETDATE() ,
 
- CONSTRAINT [PK_ArchiveLT] PRIMARY KEY CLUSTERED ([id] ASC),
- CONSTRAINT [FK_testNumberId_Archive] FOREIGN KEY ([testNumberId])  REFERENCES [LT].[ScenarioInfo]([testNumberId]) ON DELETE CASCADE
+ --CONSTRAINT [PK_ArchiveLT] PRIMARY KEY CLUSTERED ([id] ASC), -- Will be created from procedure
+ CONSTRAINT [FK_testNumberId_Archive] FOREIGN KEY ([testNumberId])  REFERENCES [DWH].[ScenarioInfo]([testNumberId]),
+ CONSTRAINT [FK_projectId_Archive] FOREIGN KEY ([projectId])  REFERENCES [DWH].[ProjectInfo]([projectId])
 );
 GO
 
-CREATE NONCLUSTERED INDEX [fkIdx_Archive] ON [LT].[ArchiveLT] 
+CREATE NONCLUSTERED INDEX [fkIdx_Archive_testNumberId] ON [DWH].[ArchiveLT] 
  (
   [testNumberId] ASC
- )
+ );
 
 GO
 
-CREATE NONCLUSTERED COLUMNSTORE INDEX [csIdx_Archive_Label] ON [LT].[ArchiveLT]
+CREATE NONCLUSTERED INDEX [csIdx_Archive_Label] ON [DWH].[ArchiveLT]
  (
-  [Label],
+  [label],
   [responseCode]
- )
+ );
 
 GO
 
-CREATE NONCLUSTERED INDEX [csIdx_Archive_elapsedTime] ON [LT].[ArchiveLT]
+CREATE NONCLUSTERED INDEX [csIdx_Archive_elapsedTime] ON [DWH].[ArchiveLT]
  (
   [elapsedTime]
  )
 
 GO
 
-CREATE NONCLUSTERED INDEX [csIdx_Archive_ThreadIdentity] ON [LT].[ArchiveLT]
+CREATE NONCLUSTERED INDEX [csIdx_Archive_ThreadIdentity] ON [DWH].[ArchiveLT]
  (
   [ThreadName],
   [NumberOfExecution]
@@ -170,691 +224,86 @@ CREATE NONCLUSTERED INDEX [csIdx_Archive_ThreadIdentity] ON [LT].[ArchiveLT]
 
 GO
 
-EXEC sp_addextendedproperty @name = N'MS_Description', @value = N'Archive info for all requests', @level0type = N'SCHEMA', @level0name = N'LT', @level1type = N'TABLE', @level1name = N'ArchiveLT';
+EXEC sp_addextendedproperty @name = N'MS_Description', @value = N'Archive info for all requests', @level0type = N'SCHEMA', @level0name = N'DWH', @level1type = N'TABLE', @level1name = N'ArchiveLT';
 
 GO
 
-/*************************************** [LT].[ScoresLT_2_1_2]*/
+/*************************************** [DWH].[ScoresLT]*/
 
-IF NOT EXISTS (SELECT * FROM sys.tables t join sys.schemas s ON (t.schema_id = s.schema_id) WHERE s.name='LT' and t.name='ScoresLT_2_1_2')
-CREATE TABLE [LT].[ScoresLT_2_1_2]
+IF NOT EXISTS (SELECT * FROM sys.tables t join sys.schemas s ON (t.schema_id = s.schema_id) WHERE s.name='DWH' and t.name='ScoresLT')
+CREATE TABLE [DWH].[ScoresLT]
 (
  [id]            int IDENTITY (1, 1) NOT NULL ,
+ [projectId]	 int NOT NULL,
  [testNumberId]  int NOT NULL ,
- [NumberOfExecution] int NULL,
+ [numberOfExecution] int NULL,
  [elapsedTime]   int NULL ,
- [Label]         nvarchar(200) NULL ,
- [ThreadsCount]  int NULL ,
- [ThreadName]   nvarchar(100) NULL ,
- [NumOfRequests] int NULL ,
- [NumOfErrors]   int NULL ,
- [Date]          datetime2(7) NOT NULL CONSTRAINT [DF_ScoresLT_2_1_2_Date] DEFAULT GETDATE() ,
+ [label]         nvarchar(200) NULL ,
+ [threadsCount]  int NULL ,
+ [threadName]   nvarchar(100) NULL ,
+ [numOfRequests] int NULL ,
+ [numOfErrors]   int NULL ,
+ [date]          datetime2(7) NOT NULL CONSTRAINT [DF_ScoresLT_2_1_2_Date] DEFAULT GETDATE() ,
 
- CONSTRAINT [PK_ScoresLT_2_1_2] PRIMARY KEY CLUSTERED ([id] ASC),
- CONSTRAINT [FK_testNumberId_2_1_2] FOREIGN KEY ([testNumberId])  REFERENCES [LT].[ScenarioInfo]([testNumberId])
+ --CONSTRAINT [PK_ScoresLT] PRIMARY KEY CLUSTERED ([id] ASC), -- Will be created from procedure
+ CONSTRAINT [FK_testNumberId_ScoresLT] FOREIGN KEY ([testNumberId])  REFERENCES [DWH].[ScenarioInfo]([testNumberId]),
+ CONSTRAINT [FK_projectId_ScoresLT] FOREIGN KEY ([projectId])  REFERENCES [DWH].[ProjectInfo]([projectId])
 );
 GO
 
-CREATE NONCLUSTERED INDEX [fkIdx_2_1_2] ON [LT].[ScoresLT_2_1_2] 
+CREATE NONCLUSTERED INDEX [fkIdx_Scores_testNumberId] ON [DWH].[ScoresLT] 
  (
   [testNumberId] ASC
- )
+ );
 
 GO
 
-CREATE NONCLUSTERED INDEX [csIdx_2_1_2_elapsedTime] ON [LT].[ScoresLT_2_1_2]
+CREATE NONCLUSTERED INDEX [csIdx_2_1_2_elapsedTime] ON [DWH].[ScoresLT]
  (
   [elapsedTime]
- )
+ );
 
 GO
 
-CREATE NONCLUSTERED COLUMNSTORE INDEX [csIdx_2_1_2_ThreadIdentity] ON [LT].[ScoresLT_2_1_2]
+CREATE NONCLUSTERED COLUMNSTORE INDEX [csIdx_2_1_2_ThreadIdentity] ON [DWH].[ScoresLT]
  (
   [ThreadName],
   [NumberOfExecution]
- )
+ );
 
 GO
 
-EXEC sp_addextendedproperty @name = N'MS_Description', @value = N'Info for criterion 2.1.2', @level0type = N'SCHEMA', @level0name = N'LT', @level1type = N'TABLE', @level1name = N'ScoresLT_2_1_2';
+EXEC sp_addextendedproperty @name = N'MS_Description', @value = N'Info for all criterions', @level0type = N'SCHEMA', @level0name = N'DWH', @level1type = N'TABLE', @level1name = N'ScoresLT';
 
 GO
 
-/*************************************** [LT].[ScoresLT_2_2]*/
+/*************************************** [DWH].[TestSummary]*/
 
-IF NOT EXISTS (SELECT * FROM sys.tables t join sys.schemas s ON (t.schema_id = s.schema_id) WHERE s.name='LT' and t.name='ScoresLT_2_2')
-CREATE TABLE [LT].[ScoresLT_2_2]
-(
- [id]            int IDENTITY (1, 1) NOT NULL ,
- [testNumberId]  int NOT NULL ,
- [NumberOfExecution] int NULL,
- [elapsedTime]   int NULL ,
- [Label]         nvarchar(200) NULL ,
- [ThreadsCount]  int NULL ,
- [ThreadName]   nvarchar(100) NULL ,
- [NumOfRequests] int NULL ,
- [NumOfErrors]   int NULL ,
- [Date]          datetime2(7) NOT NULL CONSTRAINT [DF_ScoresLT_2_2_Date] DEFAULT GETDATE() ,
-
- CONSTRAINT [PK_ScoresLT_2_2] PRIMARY KEY CLUSTERED ([id] ASC),
- CONSTRAINT [FK_testNumberId_2_2] FOREIGN KEY ([testNumberId])  REFERENCES [LT].[ScenarioInfo]([testNumberId])
-);
-GO
-
-CREATE NONCLUSTERED INDEX [fkIdx_2_2] ON [LT].[ScoresLT_2_2] 
- (
-  [testNumberId] ASC
- )
- 
-GO
-
- CREATE NONCLUSTERED INDEX [csIdx_2_2_elapsedTime] ON [LT].[ScoresLT_2_2]
- (
-  [elapsedTime]
- )
-
-GO
-
-CREATE NONCLUSTERED COLUMNSTORE INDEX [csIdx_2_2_ThreadIdentity] ON [LT].[ScoresLT_2_2]
- (
-  [ThreadName],
-  [NumberOfExecution]
- )
-
-GO
-
-EXEC sp_addextendedproperty @name = N'MS_Description', @value = N'Info for criterion 2.2', @level0type = N'SCHEMA', @level0name = N'LT', @level1type = N'TABLE', @level1name = N'ScoresLT_2_2';
-
-GO
-
-/*************************************** [LT].[ScoresLT_2_3]*/
-
-IF NOT EXISTS (SELECT * FROM sys.tables t join sys.schemas s ON (t.schema_id = s.schema_id) WHERE s.name='LT' and t.name='ScoresLT_2_3')
-CREATE TABLE [LT].[ScoresLT_2_3]
-(
- [id]            int IDENTITY (1, 1) NOT NULL ,
- [testNumberId]  int NOT NULL ,
- [NumberOfExecution] int NULL,
- [elapsedTime]   int NULL ,
- [Label]         nvarchar(200) NULL ,
- [ThreadsCount]  int NULL ,
- [ThreadName]   nvarchar(100) NULL ,
- [NumOfRequests] int NULL ,
- [NumOfErrors]   int NULL ,
- [Date]          datetime2(7) NOT NULL CONSTRAINT [DF_ScoresLT_2_3_Date] DEFAULT GETDATE() ,
-
- CONSTRAINT [PK_ScoresLT_2_3] PRIMARY KEY CLUSTERED ([id] ASC),
- CONSTRAINT [FK_testNumberId_2_3] FOREIGN KEY ([testNumberId])  REFERENCES [LT].[ScenarioInfo]([testNumberId])
-);
-GO
-
-CREATE NONCLUSTERED INDEX [fkIdx_2_3] ON [LT].[ScoresLT_2_3] 
- (
-  [testNumberId] ASC
- )
-  
-GO
-
-CREATE NONCLUSTERED INDEX [csIdx_2_3_elapsedTime] ON [LT].[ScoresLT_2_3]
- (
-  [elapsedTime]
- )
-
-GO
-
-CREATE NONCLUSTERED COLUMNSTORE INDEX [csIdx_2_3_ThreadIdentity] ON [LT].[ScoresLT_2_3]
- (
-  [ThreadName],
-  [NumberOfExecution]
- )
-
-GO
-
-EXEC sp_addextendedproperty @name = N'MS_Description', @value = N'Info for criterion 2.3', @level0type = N'SCHEMA', @level0name = N'LT', @level1type = N'TABLE', @level1name = N'ScoresLT_2_3';
-
-GO
-
-/*************************************** [LT].[ScoresLT_2_4]*/
-
-IF NOT EXISTS (SELECT * FROM sys.tables t join sys.schemas s ON (t.schema_id = s.schema_id) WHERE s.name='LT' and t.name='ScoresLT_2_4')
-CREATE TABLE [LT].[ScoresLT_2_4]
-(
- [id]            int IDENTITY (1, 1) NOT NULL ,
- [testNumberId]  int NOT NULL ,
- [NumberOfExecution] int NULL,
- [elapsedTime]   int NULL ,
- [Label]         nvarchar(200) NULL ,
- [ThreadsCount]  int NULL ,
- [ThreadName]   nvarchar(100) NULL ,
- [NumOfRequests] int NULL ,
- [NumOfErrors]   int NULL ,
- [Date]          datetime2(7) NOT NULL CONSTRAINT [DF_ScoresLT_2_4_Date] DEFAULT GETDATE() ,
-
- CONSTRAINT [PK_ScoresLT_2_4] PRIMARY KEY CLUSTERED ([id] ASC),
- CONSTRAINT [FK_testNumberId_2_4] FOREIGN KEY ([testNumberId])  REFERENCES [LT].[ScenarioInfo]([testNumberId])
-);
-GO
-
-CREATE NONCLUSTERED INDEX [fkIdx_2_4] ON [LT].[ScoresLT_2_4] 
- (
-  [testNumberId] ASC
- )
-  
-GO
-
-CREATE NONCLUSTERED INDEX [csIdx_2_4_elapsedTime] ON [LT].[ScoresLT_2_4]
- (
-  [elapsedTime]
- )
-
-GO
-
-CREATE NONCLUSTERED COLUMNSTORE INDEX [csIdx_2_4_ThreadIdentity] ON [LT].[ScoresLT_2_4]
- (
-  [ThreadName],
-  [NumberOfExecution]
- )
-
-GO
-
-EXEC sp_addextendedproperty @name = N'MS_Description', @value = N'Info for criterion 2.4', @level0type = N'SCHEMA', @level0name = N'LT', @level1type = N'TABLE', @level1name = N'ScoresLT_2_4';
-
-GO
-
-/*************************************** [LT].[ScoresLT_2_6]*/
-
-IF NOT EXISTS (SELECT * FROM sys.tables t join sys.schemas s ON (t.schema_id = s.schema_id) WHERE s.name='LT' and t.name='ScoresLT_2_6')
-CREATE TABLE [LT].[ScoresLT_2_6]
-(
- [id]            int IDENTITY (1, 1) NOT NULL ,
- [testNumberId]  int NOT NULL ,
- [NumberOfExecution] int NULL,
- [elapsedTime]   int NULL ,
- [Label]         nvarchar(200) NULL ,
- [ThreadsCount]  int NULL ,
- [ThreadName]   nvarchar(100) NULL ,
- [NumOfRequests] int NULL ,
- [NumOfErrors]   int NULL ,
- [Date]          datetime2(7) NOT NULL CONSTRAINT [DF_ScoresLT_2_6_Date] DEFAULT GETDATE() ,
-
- CONSTRAINT [PK_ScoresLT_2_6] PRIMARY KEY CLUSTERED ([id] ASC),
- CONSTRAINT [FK_testNumberId_2_6] FOREIGN KEY ([testNumberId])  REFERENCES [LT].[ScenarioInfo]([testNumberId])
-);
-GO
-
-CREATE NONCLUSTERED INDEX [fkIdx_2_6] ON [LT].[ScoresLT_2_6] 
- (
-  [testNumberId] ASC
- )
- 
-GO
-
-CREATE NONCLUSTERED INDEX [csIdx_2_6_elapsedTime] ON [LT].[ScoresLT_2_6]
- (
-  [elapsedTime]
- )
-
-GO
-
-CREATE NONCLUSTERED COLUMNSTORE INDEX [csIdx_2_6_ThreadIdentity] ON [LT].[ScoresLT_2_6]
- (
-  [ThreadName],
-  [NumberOfExecution]
- )
-
-GO
-
-EXEC sp_addextendedproperty @name = N'MS_Description', @value = N'Info for criterion 2.6', @level0type = N'SCHEMA', @level0name = N'LT', @level1type = N'TABLE', @level1name = N'ScoresLT_2_6';
-
-GO
-
-/*************************************** [LT].[ScoresLT_2_7_1]*/
-
-IF NOT EXISTS (SELECT * FROM sys.tables t join sys.schemas s ON (t.schema_id = s.schema_id) WHERE s.name='LT' and t.name='ScoresLT_2_7_1')
-CREATE TABLE [LT].[ScoresLT_2_7_1]
-(
- [id]            int IDENTITY (1, 1) NOT NULL ,
- [testNumberId]  int NOT NULL ,
- [NumberOfExecution] int NULL,
- [elapsedTime]   int NULL ,
- [Label]         nvarchar(200) NULL ,
- [ThreadsCount]  int NULL ,
- [ThreadName]   nvarchar(100) NULL ,
- [NumOfRequests] int NULL ,
- [NumOfErrors]   int NULL ,
- [Date]          datetime2(7) NOT NULL CONSTRAINT [DF_ScoresLT_2_7_1_Date] DEFAULT GETDATE() ,
-
- CONSTRAINT [PK_ScoresLT_2_7_1] PRIMARY KEY CLUSTERED ([id] ASC),
- CONSTRAINT [FK_testNumberId_2_7_1] FOREIGN KEY ([testNumberId])  REFERENCES [LT].[ScenarioInfo]([testNumberId])
-);
-GO
-
-CREATE NONCLUSTERED INDEX [fkIdx_2_7_1] ON [LT].[ScoresLT_2_7_1] 
- (
-  [testNumberId] ASC
- )
- 
-GO
-
-CREATE NONCLUSTERED INDEX [csIdx_2_7_1_elapsedTime] ON [LT].[ScoresLT_2_7_1]
- (
-  [elapsedTime]
- )
-
-GO
-
-CREATE NONCLUSTERED COLUMNSTORE INDEX [csIdx_2_7_1_ThreadIdentity] ON [LT].[ScoresLT_2_7_1]
- (
-  [ThreadName],
-  [NumberOfExecution]
- )
-
-GO
-
-EXEC sp_addextendedproperty @name = N'MS_Description', @value = N'Info for criterion 2.7.1', @level0type = N'SCHEMA', @level0name = N'LT', @level1type = N'TABLE', @level1name = N'ScoresLT_2_7_1';
-
-GO
-
-/*************************************** [LT].[ScoresLT_2_7_2]*/
-
-IF NOT EXISTS (SELECT * FROM sys.tables t join sys.schemas s ON (t.schema_id = s.schema_id) WHERE s.name='LT' and t.name='ScoresLT_2_7_2')
-CREATE TABLE [LT].[ScoresLT_2_7_2]
-(
- [id]            int IDENTITY (1, 1) NOT NULL ,
- [testNumberId]  int NOT NULL ,
- [NumberOfExecution] int NULL,
- [elapsedTime]   int NULL ,
- [Label]         nvarchar(200) NULL ,
- [ThreadsCount]  int NULL ,
- [ThreadName]   nvarchar(100) NULL ,
- [NumOfRequests] int NULL ,
- [NumOfErrors]   int NULL ,
- [Date]          datetime2(7) NOT NULL CONSTRAINT [DF_ScoresLT_2_7_2_Date] DEFAULT GETDATE() ,
-
- CONSTRAINT [PK_ScoresLT_2_7_2] PRIMARY KEY CLUSTERED ([id] ASC),
- CONSTRAINT [FK_testNumberId_2_7_2] FOREIGN KEY ([testNumberId])  REFERENCES [LT].[ScenarioInfo]([testNumberId])
-);
-GO
-
-CREATE NONCLUSTERED INDEX [fkIdx_2_7_2] ON [LT].[ScoresLT_2_7_2] 
- (
-  [testNumberId] ASC
- )
- 
-GO
-
-CREATE NONCLUSTERED INDEX [csIdx_2_7_2_elapsedTime] ON [LT].[ScoresLT_2_7_2]
- (
-  [elapsedTime]
- )
-
-GO
-
-CREATE NONCLUSTERED COLUMNSTORE INDEX [csIdx_2_7_2_ThreadIdentity] ON [LT].[ScoresLT_2_7_2]
- (
-  [ThreadName],
-  [NumberOfExecution]
- )
-
-GO
-
-EXEC sp_addextendedproperty @name = N'MS_Description', @value = N'Info for criterion 2.7.2', @level0type = N'SCHEMA', @level0name = N'LT', @level1type = N'TABLE', @level1name = N'ScoresLT_2_7_2';
-
-GO
-
-/*************************************** [LT].[ScoresLT_2_7_3]*/
-
-IF NOT EXISTS (SELECT * FROM sys.tables t join sys.schemas s ON (t.schema_id = s.schema_id) WHERE s.name='LT' and t.name='ScoresLT_2_7_3')
-CREATE TABLE [LT].[ScoresLT_2_7_3]
-(
- [id]            int IDENTITY (1, 1) NOT NULL ,
- [testNumberId]  int NOT NULL ,
- [NumberOfExecution] int NULL,
- [elapsedTime]   int NULL ,
- [Label]         nvarchar(200) NULL ,
- [ThreadsCount]  int NULL ,
- [ThreadName]   nvarchar(100) NULL ,
- [NumOfRequests] int NULL ,
- [NumOfErrors]   int NULL ,
- [Date]          datetime2(7) NOT NULL CONSTRAINT [DF_ScoresLT_2_7_3_Date] DEFAULT GETDATE() ,
-
- CONSTRAINT [PK_ScoresLT_2_7_3] PRIMARY KEY CLUSTERED ([id] ASC),
- CONSTRAINT [FK_testNumberId_2_7_3] FOREIGN KEY ([testNumberId])  REFERENCES [LT].[ScenarioInfo]([testNumberId])
-);
-GO
-
-CREATE NONCLUSTERED INDEX [fkIdx_2_7_3] ON [LT].[ScoresLT_2_7_3] 
- (
-  [testNumberId] ASC
- )
- 
-GO
-
-CREATE NONCLUSTERED INDEX [csIdx_2_7_3_elapsedTime] ON [LT].[ScoresLT_2_7_3]
- (
-  [elapsedTime]
- )
-
-GO
-
-CREATE NONCLUSTERED COLUMNSTORE INDEX [csIdx_2_7_3_ThreadIdentity] ON [LT].[ScoresLT_2_7_3]
- (
-  [ThreadName],
-  [NumberOfExecution]
- )
-
-GO
-
-EXEC sp_addextendedproperty @name = N'MS_Description', @value = N'Info for criterion 2.7.3', @level0type = N'SCHEMA', @level0name = N'LT', @level1type = N'TABLE', @level1name = N'ScoresLT_2_7_3';
-
-GO
-
-/*************************************** [LT].[ScoresLT_2_7_4]*/
-
-IF NOT EXISTS (SELECT * FROM sys.tables t join sys.schemas s ON (t.schema_id = s.schema_id) WHERE s.name='LT' and t.name='ScoresLT_2_7_4')
-CREATE TABLE [LT].[ScoresLT_2_7_4]
-(
- [id]            int IDENTITY (1, 1) NOT NULL ,
- [testNumberId]  int NOT NULL ,
- [NumberOfExecution] int NULL,
- [elapsedTime]   int NULL ,
- [Label]         nvarchar(200) NULL ,
- [ThreadsCount]  int NULL ,
- [ThreadName]   nvarchar(100) NULL ,
- [NumOfRequests] int NULL ,
- [NumOfErrors]   int NULL ,
- [Date]          datetime2(7) NOT NULL CONSTRAINT [DF_ScoresLT_2_7_4_Date] DEFAULT GETDATE() ,
-
- CONSTRAINT [PK_ScoresLT_2_7_4] PRIMARY KEY CLUSTERED ([id] ASC),
- CONSTRAINT [FK_testNumberId_2_7_4] FOREIGN KEY ([testNumberId])  REFERENCES [LT].[ScenarioInfo]([testNumberId])
-);
-GO
-
-CREATE NONCLUSTERED INDEX [fkIdx_2_7_4] ON [LT].[ScoresLT_2_7_4] 
- (
-  [testNumberId] ASC
- )
- 
-GO
-
-CREATE NONCLUSTERED INDEX [csIdx_2_7_4_elapsedTime] ON [LT].[ScoresLT_2_7_4]
- (
-  [elapsedTime]
- )
-
-GO
-
-CREATE NONCLUSTERED COLUMNSTORE INDEX [csIdx_2_7_4_ThreadIdentity] ON [LT].[ScoresLT_2_7_4]
- (
-  [ThreadName],
-  [NumberOfExecution]
- )
-
-GO
-
-EXEC sp_addextendedproperty @name = N'MS_Description', @value = N'Info for criterion 2.7.4', @level0type = N'SCHEMA', @level0name = N'LT', @level1type = N'TABLE', @level1name = N'ScoresLT_2_7_4';
-
-GO
-
-/*************************************** [LT].[ScoresLT_2_7_5]*/
-
-IF NOT EXISTS (SELECT * FROM sys.tables t join sys.schemas s ON (t.schema_id = s.schema_id) WHERE s.name='LT' and t.name='ScoresLT_2_7_5')
-CREATE TABLE [LT].[ScoresLT_2_7_5]
-(
- [id]            int IDENTITY (1, 1) NOT NULL ,
- [testNumberId]  int NOT NULL ,
- [NumberOfExecution] int NULL,
- [elapsedTime]   int NULL ,
- [Label]         nvarchar(200) NULL ,
- [ThreadsCount]  int NULL ,
- [ThreadName]   nvarchar(100) NULL ,
- [NumOfRequests] int NULL ,
- [NumOfErrors]   int NULL ,
- [Date]          datetime2(7) NOT NULL CONSTRAINT [DF_ScoresLT_2_7_5_Date] DEFAULT GETDATE() ,
-
- CONSTRAINT [PK_ScoresLT_2_7_5] PRIMARY KEY CLUSTERED ([id] ASC),
- CONSTRAINT [FK_testNumberId_2_7_5] FOREIGN KEY ([testNumberId])  REFERENCES [LT].[ScenarioInfo]([testNumberId])
-);
-GO
-
-CREATE NONCLUSTERED INDEX [fkIdx_2_7_5] ON [LT].[ScoresLT_2_7_5] 
- (
-  [testNumberId] ASC
- )
- 
-GO
-
-CREATE NONCLUSTERED INDEX [csIdx_2_7_5_elapsedTime] ON [LT].[ScoresLT_2_7_5]
- (
-  [elapsedTime]
- )
-
-GO
-
-CREATE NONCLUSTERED COLUMNSTORE INDEX [csIdx_2_7_5_ThreadIdentity] ON [LT].[ScoresLT_2_7_5]
- (
-  [ThreadName],
-  [NumberOfExecution]
- )
-
-GO
-
-EXEC sp_addextendedproperty @name = N'MS_Description', @value = N'Info for criterion 2.7.5', @level0type = N'SCHEMA', @level0name = N'LT', @level1type = N'TABLE', @level1name = N'ScoresLT_2_7_5';
-
-GO
-
-/*************************************** [LT].[ScoresLT_2_7_6]*/
-
-IF NOT EXISTS (SELECT * FROM sys.tables t join sys.schemas s ON (t.schema_id = s.schema_id) WHERE s.name='LT' and t.name='ScoresLT_2_7_6')
-CREATE TABLE [LT].[ScoresLT_2_7_6]
-(
- [id]            int IDENTITY (1, 1) NOT NULL ,
- [testNumberId]  int NOT NULL ,
- [NumberOfExecution] int NULL,
- [elapsedTime]   int NULL ,
- [Label]         nvarchar(200) NULL ,
- [ThreadsCount]  int NULL ,
- [ThreadName]   nvarchar(100) NULL ,
- [NumOfRequests] int NULL ,
- [NumOfErrors]   int NULL ,
- [Date]          datetime2(7) NOT NULL CONSTRAINT [DF_ScoresLT_2_7_6_Date] DEFAULT GETDATE() ,
-
- CONSTRAINT [PK_ScoresLT_2_7_6] PRIMARY KEY CLUSTERED ([id] ASC),
- CONSTRAINT [FK_testNumberId_2_7_6] FOREIGN KEY ([testNumberId])  REFERENCES [LT].[ScenarioInfo]([testNumberId])
-);
-GO
-
-CREATE NONCLUSTERED INDEX [fkIdx_2_7_6] ON [LT].[ScoresLT_2_7_6] 
- (
-  [testNumberId] ASC
- )
- 
-GO
-
-CREATE NONCLUSTERED INDEX [csIdx_2_7_6_elapsedTime] ON [LT].[ScoresLT_2_7_6]
- (
-  [elapsedTime]
- )
-
-GO
-
-CREATE NONCLUSTERED COLUMNSTORE INDEX [csIdx_2_7_6_ThreadIdentity] ON [LT].[ScoresLT_2_7_6]
- (
-  [ThreadName],
-  [NumberOfExecution]
- )
-
-GO
-
-EXEC sp_addextendedproperty @name = N'MS_Description', @value = N'Info for criterion 2.7.6', @level0type = N'SCHEMA', @level0name = N'LT', @level1type = N'TABLE', @level1name = N'ScoresLT_2_7_6';
-
-GO
-
-/*************************************** [LT].[ScoresLT_2_8]*/
-
-IF NOT EXISTS (SELECT * FROM sys.tables t join sys.schemas s ON (t.schema_id = s.schema_id) WHERE s.name='LT' and t.name='ScoresLT_2_8')
-CREATE TABLE [LT].[ScoresLT_2_8]
-(
- [id]            int IDENTITY (1, 1) NOT NULL ,
- [testNumberId]  int NOT NULL ,
- [NumberOfExecution] int NULL,
- [elapsedTime]   int NULL ,
- [Label]         nvarchar(200) NULL ,
- [ThreadsCount]  int NULL ,
- [ThreadName]   nvarchar(100) NULL ,
- [NumOfRequests] int NULL ,
- [NumOfErrors]   int NULL ,
- [Date]          datetime2(7) NOT NULL CONSTRAINT [DF_ScoresLT_2_8_Date] DEFAULT GETDATE() ,
-
- CONSTRAINT [PK_ScoresLT_2_8] PRIMARY KEY CLUSTERED ([id] ASC),
- CONSTRAINT [FK_testNumberId_2_8] FOREIGN KEY ([testNumberId])  REFERENCES [LT].[ScenarioInfo]([testNumberId])
-);
-GO
-
-CREATE NONCLUSTERED INDEX [fkIdx_2_8] ON [LT].[ScoresLT_2_8] 
- (
-  [testNumberId] ASC
- )
- 
-GO
-
-CREATE NONCLUSTERED INDEX [csIdx_2_8_elapsedTime] ON [LT].[ScoresLT_2_8]
- (
-  [elapsedTime]
- )
-
-GO
-
-CREATE NONCLUSTERED COLUMNSTORE INDEX [csIdx_2_8_ThreadIdentity] ON [LT].[ScoresLT_2_8]
- (
-  [ThreadName],
-  [NumberOfExecution]
- )
-
-GO
-
-EXEC sp_addextendedproperty @name = N'MS_Description', @value = N'Info for criterion 2.8', @level0type = N'SCHEMA', @level0name = N'LT', @level1type = N'TABLE', @level1name = N'ScoresLT_2_8';
-
-GO
-
-/*************************************** [LT].[ScoresLT_2_9]*/
-
-IF NOT EXISTS (SELECT * FROM sys.tables t join sys.schemas s ON (t.schema_id = s.schema_id) WHERE s.name='LT' and t.name='ScoresLT_2_9')
-CREATE TABLE [LT].[ScoresLT_2_9]
-(
- [id]            int IDENTITY (1, 1) NOT NULL ,
- [testNumberId]  int NOT NULL ,
- [NumberOfExecution] int NULL,
- [elapsedTime]   int NULL ,
- [Label]         nvarchar(200) NULL ,
- [ThreadsCount]  int NULL ,
- [ThreadName]   nvarchar(100) NULL ,
- [NumOfRequests] int NULL ,
- [NumOfErrors]   int NULL ,
- [Date]          datetime2(7) NOT NULL CONSTRAINT [DF_ScoresLT_2_9_Date] DEFAULT GETDATE() ,
-
- CONSTRAINT [PK_ScoresLT_2_9] PRIMARY KEY CLUSTERED ([id] ASC),
- CONSTRAINT [FK_testNumberId_2_9] FOREIGN KEY ([testNumberId])  REFERENCES [LT].[ScenarioInfo]([testNumberId])
-);
-GO
-
-CREATE NONCLUSTERED INDEX [fkIdx_2_9] ON [LT].[ScoresLT_2_9] 
- (
-  [testNumberId] ASC
- )
- 
-GO
-
-CREATE NONCLUSTERED INDEX [csIdx_2_9_elapsedTime] ON [LT].[ScoresLT_2_9]
- (
-  [elapsedTime]
- )
-
-GO
-
-CREATE NONCLUSTERED COLUMNSTORE INDEX [csIdx_2_9_ThreadIdentity] ON [LT].[ScoresLT_2_9]
- (
-  [ThreadName],
-  [NumberOfExecution]
- )
-
-GO
-
-EXEC sp_addextendedproperty @name = N'MS_Description', @value = N'Info for criterion 2.9', @level0type = N'SCHEMA', @level0name = N'LT', @level1type = N'TABLE', @level1name = N'ScoresLT_2_9';
-
-GO
-
-/*************************************** [LT].[ScoresLT_2_10]*/
-
-IF NOT EXISTS (SELECT * FROM sys.tables t join sys.schemas s ON (t.schema_id = s.schema_id) WHERE s.name='LT' and t.name='ScoresLT_2_10')
-CREATE TABLE [LT].[ScoresLT_2_10]
-(
- [id]            int IDENTITY (1, 1) NOT NULL ,
- [testNumberId]  int NOT NULL ,
- [NumberOfExecution] int NULL,
- [elapsedTime]   int NULL ,
- [Label]         nvarchar(200) NULL ,
- [ThreadsCount]  int NULL ,
- [ThreadName]   nvarchar(100) NULL ,
- [NumOfRequests] int NULL ,
- [NumOfErrors]   int NULL ,
- [Date]          datetime2(7) NOT NULL CONSTRAINT [DF_ScoresLT_2_10_Date] DEFAULT GETDATE() ,
-
- CONSTRAINT [PK_ScoresLT_2_10] PRIMARY KEY CLUSTERED ([id] ASC),
- CONSTRAINT [FK_testNumberId_2_10] FOREIGN KEY ([testNumberId])  REFERENCES [LT].[ScenarioInfo]([testNumberId])
-);
-GO
-
-CREATE NONCLUSTERED INDEX [fkIdx_2_10] ON [LT].[ScoresLT_2_10] 
- (
-  [testNumberId] ASC
- )
- 
-GO
-
-CREATE NONCLUSTERED INDEX [csIdx_2_10_elapsedTime] ON [LT].[ScoresLT_2_10]
- (
-  [elapsedTime]
- )
-
-GO
-
-CREATE NONCLUSTERED COLUMNSTORE INDEX [csIdx_2_10_ThreadIdentity] ON [LT].[ScoresLT_2_10]
- (
-  [ThreadName],
-  [NumberOfExecution]
- )
-
-GO
-
-EXEC sp_addextendedproperty @name = N'MS_Description', @value = N'Info for criterion 2.10', @level0type = N'SCHEMA', @level0name = N'LT', @level1type = N'TABLE', @level1name = N'ScoresLT_2_10';
-
-GO
-
-/*************************************** [LT].[Scores_AGR]*/
-
-IF NOT EXISTS (SELECT * FROM sys.tables t join sys.schemas s ON (t.schema_id = s.schema_id) WHERE s.name='LT' and t.name='Scores_AGR')
-CREATE TABLE [LT].[Scores_AGR]
+IF NOT EXISTS (SELECT * FROM sys.tables t join sys.schemas s ON (t.schema_id = s.schema_id) WHERE s.name='DWH' and t.name='TestSummary')
+CREATE TABLE [DWH].[TestSummary]
 (
  [testNumberId]           int NOT NULL ,
- [NameOfTest]             nvarchar(100) NULL ,
- [NumberOfThreads]        int NULL ,
- [AverageElapsedTime, ms] int NULL ,
- [MinElapsedTime, ms]     int NULL ,
- [MaxElapsedTime, ms]     int NULL ,
- [CountOfExecutions]      int NULL ,
- [CountOfFails]           int NULL ,
- [Date]                   datetime2(7) NOT NULL CONSTRAINT [DF_Scores_AGR_Date] DEFAULT GETDATE()
+ [nameOfTest]             nvarchar(100) NULL ,
+ [numberOfThreads]        int NULL ,
+ [averageElapsedTime, ms] int NULL ,
+ [minElapsedTime, ms]     int NULL ,
+ [maxElapsedTime, ms]     int NULL ,
+ [countOfExecutions]	  int NULL,	
+ [countOfRequests]        int NULL ,
+ [countOfFails]           int NULL ,
+ [date]                   datetime2(7) NOT NULL CONSTRAINT [DF_Scores_AGR_Date] DEFAULT GETDATE()
 
- CONSTRAINT [FK_testNumberId_AGR] FOREIGN KEY ([testNumberId])  REFERENCES [LT].[ScenarioInfo]([testNumberId])
+ CONSTRAINT [FK_testNumberId_Summary] FOREIGN KEY ([testNumberId])  REFERENCES [DWH].[ScenarioInfo]([testNumberId])
 );
 GO
 
-EXEC sp_addextendedproperty @name = N'MS_Description', @value = N'Summary results for related tests', @level0type = N'SCHEMA', @level0name = N'LT', @level1type = N'TABLE', @level1name = N'Scores_AGR';
+EXEC sp_addextendedproperty @name = N'MS_Description', @value = N'Summary results for related tests', @level0type = N'SCHEMA', @level0name = N'DWH', @level1type = N'TABLE', @level1name = N'TestSummary';
 GO
 
-CREATE VIEW LT.TestResultInfo
+DROP VIEW IF EXISTS DWH.TestResultInfo;
+
+GO
+CREATE VIEW DWH.TestResultInfo
 AS
 SELECT	si.projectId, si.EnvId, si.testNumberId, si.Duration, si.RampUp, si.NumberOfThreads,
 		agr.NameOfTest,
@@ -865,16 +314,16 @@ SELECT	si.projectId, si.EnvId, si.testNumberId, si.Duration, si.RampUp, si.Numbe
 		agr.CountOfExecutions,
 		agr.CountOfFails,
 		CASE 
-			WHEN agr.NameOfTest LIKE N'2.1.%' AND agr.[AverageElapsedTime, ms] <= (SELECT TOP 1 ti.TargetValue FROM LT.TargetInfo ti WHERE SUBSTRING(ti.TargetName,1,3)=SUBSTRING(agr.NameOfTest, 1, 3) AND ti.projectId=si.projectId) THEN 'Passed'
-			WHEN agr.NameOfTest LIKE N'2.2%' AND agr.[AverageElapsedTime, ms] <= (SELECT TOP 1 ti.TargetValue FROM LT.TargetInfo ti WHERE SUBSTRING(ti.TargetName,1,3)=SUBSTRING(agr.NameOfTest, 1, 3) AND ti.projectId=si.projectId) THEN 'Passed'
-			WHEN agr.NameOfTest LIKE N'2.3%' AND agr.[AverageElapsedTime, ms] <= (SELECT TOP 1 ti.TargetValue FROM LT.TargetInfo ti WHERE SUBSTRING(ti.TargetName,1,3)=SUBSTRING(agr.NameOfTest, 1, 3) AND ti.projectId=si.projectId) THEN 'Passed'
-			WHEN agr.NameOfTest LIKE N'2.4%' AND agr.[AverageElapsedTime, ms] <= (SELECT TOP 1 ti.TargetValue FROM LT.TargetInfo ti WHERE SUBSTRING(ti.TargetName,1,3)=SUBSTRING(agr.NameOfTest, 1, 3) AND ti.projectId=si.projectId) THEN 'Passed'
-			WHEN agr.NameOfTest LIKE N'2.6%' AND agr.[AverageElapsedTime, ms] <= (SELECT TOP 1 ti.TargetValue FROM LT.TargetInfo ti WHERE SUBSTRING(ti.TargetName,1,3)=SUBSTRING(agr.NameOfTest, 1, 3) AND ti.projectId=si.projectId) THEN 'Passed'
-			WHEN agr.NameOfTest LIKE N'2.7.%' AND agr.[AverageElapsedTime, ms] <= (SELECT TOP 1 ti.TargetValue FROM LT.TargetInfo ti WHERE SUBSTRING(ti.TargetName,1,3)=SUBSTRING(agr.NameOfTest, 1, 3) AND ti.projectId=si.projectId) THEN 'Passed'
-			WHEN agr.NameOfTest LIKE N'2.8%' AND agr.[AverageElapsedTime, ms] <= (SELECT TOP 1 ti.TargetValue FROM LT.TargetInfo ti WHERE SUBSTRING(ti.TargetName,1,3)=SUBSTRING(agr.NameOfTest, 1, 3) AND ti.projectId=si.projectId) THEN 'Passed'
-			WHEN agr.NameOfTest LIKE N'2.9%' AND agr.[AverageElapsedTime, ms] <= (SELECT TOP 1 ti.TargetValue FROM LT.TargetInfo ti WHERE SUBSTRING(ti.TargetName,1,3)=SUBSTRING(agr.NameOfTest, 1, 3) AND ti.projectId=si.projectId) THEN 'Passed'
-			WHEN agr.NameOfTest LIKE N'2.10%' AND agr.[AverageElapsedTime, ms] <= (SELECT TOP 1 ti.TargetValue FROM LT.TargetInfo ti WHERE SUBSTRING(ti.TargetName,1,3)=SUBSTRING(agr.NameOfTest, 1, 3) AND ti.projectId=si.projectId) THEN 'Passed'
+			WHEN agr.NameOfTest LIKE N'2.1.%' AND agr.[AverageElapsedTime, ms] <= (SELECT TOP 1 ti.TargetValue FROM DWH.TargetInfo ti WHERE SUBSTRING(ti.TargetName,1,3)=SUBSTRING(agr.NameOfTest, 1, 3) AND ti.projectId=si.projectId) THEN 'Passed'
+			WHEN agr.NameOfTest LIKE N'2.2%' AND agr.[AverageElapsedTime, ms] <= (SELECT TOP 1 ti.TargetValue FROM DWH.TargetInfo ti WHERE SUBSTRING(ti.TargetName,1,3)=SUBSTRING(agr.NameOfTest, 1, 3) AND ti.projectId=si.projectId) THEN 'Passed'
+			WHEN agr.NameOfTest LIKE N'2.3%' AND agr.[AverageElapsedTime, ms] <= (SELECT TOP 1 ti.TargetValue FROM DWH.TargetInfo ti WHERE SUBSTRING(ti.TargetName,1,3)=SUBSTRING(agr.NameOfTest, 1, 3) AND ti.projectId=si.projectId) THEN 'Passed'
+			WHEN agr.NameOfTest LIKE N'2.4%' AND agr.[AverageElapsedTime, ms] <= (SELECT TOP 1 ti.TargetValue FROM DWH.TargetInfo ti WHERE SUBSTRING(ti.TargetName,1,3)=SUBSTRING(agr.NameOfTest, 1, 3) AND ti.projectId=si.projectId) THEN 'Passed'
+			WHEN agr.NameOfTest LIKE N'2.6%' AND agr.[AverageElapsedTime, ms] <= (SELECT TOP 1 ti.TargetValue FROM DWH.TargetInfo ti WHERE SUBSTRING(ti.TargetName,1,3)=SUBSTRING(agr.NameOfTest, 1, 3) AND ti.projectId=si.projectId) THEN 'Passed'
+			WHEN agr.NameOfTest LIKE N'2.7.%' AND agr.[AverageElapsedTime, ms] <= (SELECT TOP 1 ti.TargetValue FROM DWH.TargetInfo ti WHERE SUBSTRING(ti.TargetName,1,3)=SUBSTRING(agr.NameOfTest, 1, 3) AND ti.projectId=si.projectId) THEN 'Passed'
+			WHEN agr.NameOfTest LIKE N'2.8%' AND agr.[AverageElapsedTime, ms] <= (SELECT TOP 1 ti.TargetValue FROM DWH.TargetInfo ti WHERE SUBSTRING(ti.TargetName,1,3)=SUBSTRING(agr.NameOfTest, 1, 3) AND ti.projectId=si.projectId) THEN 'Passed'
+			WHEN agr.NameOfTest LIKE N'2.9%' AND agr.[AverageElapsedTime, ms] <= (SELECT TOP 1 ti.TargetValue FROM DWH.TargetInfo ti WHERE SUBSTRING(ti.TargetName,1,3)=SUBSTRING(agr.NameOfTest, 1, 3) AND ti.projectId=si.projectId) THEN 'Passed'
+			WHEN agr.NameOfTest LIKE N'2.10%' AND agr.[AverageElapsedTime, ms] <= (SELECT TOP 1 ti.TargetValue FROM DWH.TargetInfo ti WHERE SUBSTRING(ti.TargetName,1,3)=SUBSTRING(agr.NameOfTest, 1, 3) AND ti.projectId=si.projectId) THEN 'Passed'
 			ELSE 'Not Passed'
 		END AS Summary
-FROM LT.ScenarioInfo si
-JOIN LT.Scores_AGR agr ON si.testNumberId=agr.testNumberId;
+FROM DWH.ScenarioInfo si
+JOIN DWH.TestSummary agr ON si.testNumberId=agr.testNumberId;

@@ -1,15 +1,15 @@
-USE LoadTestResults;
+USE LoadTestResults20;
 
 GO
 DECLARE @projectId int=1002;
 
-INSERT INTO LT.ProjectInfo (projectId, projectName, AppMajorVersion, AppMinorVersion)
-VALUES (@projectId, 'DELTA', 2, 1);
+INSERT INTO DWH.ProjectInfo (projectId, projectName, appMajorVersion, appMinorVersion)
+VALUES (@projectId, 'BETA', 1, 1);
 
-INSERT INTO LT.EnvInfo (projectId, NumberOfInstances, EnvDescription)
-VALUES (@projectId, 10, 'Another Environment for load test');
+INSERT INTO DWH.EnvInfo (projectId, numberOfInstances, envDescription)
+VALUES (@projectId, 10, 'Environment for load test');
 
-INSERT INTO LT.TargetInfo (projectId, TargetName, TargetValue)
+INSERT INTO DWH.TargetInfo (projectId, targetName, targetValue)
 VALUES	(@projectId, '2.1.2', 500),
 		(@projectId, '2.2', 100),
 		(@projectId, '2.3', 500),
