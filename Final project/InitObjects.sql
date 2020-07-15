@@ -193,7 +193,7 @@ CREATE TABLE [DWH].[ArchiveLT]
  CONSTRAINT [FK_projectId_Archive] FOREIGN KEY ([projectId])  REFERENCES [DWH].[ProjectInfo]([projectId])
 );
 GO
-
+/*
 CREATE NONCLUSTERED INDEX [fkIdx_Archive_testNumberId] ON [DWH].[ArchiveLT] 
  (
   [testNumberId] ASC
@@ -221,7 +221,7 @@ CREATE NONCLUSTERED INDEX [csIdx_Archive_ThreadIdentity] ON [DWH].[ArchiveLT]
   [ThreadName],
   [NumberOfExecution]
  )
-
+*/
 GO
 
 EXEC sp_addextendedproperty @name = N'MS_Description', @value = N'Archive info for all requests', @level0type = N'SCHEMA', @level0name = N'DWH', @level1type = N'TABLE', @level1name = N'ArchiveLT';
@@ -249,8 +249,17 @@ CREATE TABLE [DWH].[ScoresLT]
  CONSTRAINT [FK_testNumberId_ScoresLT] FOREIGN KEY ([testNumberId])  REFERENCES [DWH].[ScenarioInfo]([testNumberId]),
  CONSTRAINT [FK_projectId_ScoresLT] FOREIGN KEY ([projectId])  REFERENCES [DWH].[ProjectInfo]([projectId])
 );
-GO
 
+GO
+CREATE NONCLUSTERED INDEX idx_ScoresLT_projectId_testNumberId ON DWH.ScoresLT 
+(
+	projectId,
+	testNumberId
+)
+INCLUDE (label, elapsedTime, numberOfExecution, NumOfErrors, ThreadsCount);
+
+GO
+/*
 CREATE NONCLUSTERED INDEX [fkIdx_Scores_testNumberId] ON [DWH].[ScoresLT] 
  (
   [testNumberId] ASC
@@ -265,12 +274,12 @@ CREATE NONCLUSTERED INDEX [csIdx_2_1_2_elapsedTime] ON [DWH].[ScoresLT]
 
 GO
 
-CREATE NONCLUSTERED COLUMNSTORE INDEX [csIdx_2_1_2_ThreadIdentity] ON [DWH].[ScoresLT]
+CREATE NONCLUSTERED INDEX [csIdx_2_1_2_ThreadIdentity] ON [DWH].[ScoresLT]
  (
   [ThreadName],
   [NumberOfExecution]
  );
-
+*/
 GO
 
 EXEC sp_addextendedproperty @name = N'MS_Description', @value = N'Info for all criterions', @level0type = N'SCHEMA', @level0name = N'DWH', @level1type = N'TABLE', @level1name = N'ScoresLT';
@@ -285,9 +294,9 @@ CREATE TABLE [DWH].[TestSummary]
  [testNumberId]           int NOT NULL ,
  [nameOfTest]             nvarchar(100) NULL ,
  [numberOfThreads]        int NULL ,
- [averageElapsedTime, ms] int NULL ,
- [minElapsedTime, ms]     int NULL ,
- [maxElapsedTime, ms]     int NULL ,
+ [averageElapsedTimeMs]	  int NULL ,
+ [minElapsedTimeMs]       int NULL ,
+ [maxElapsedTimeMs]       int NULL ,
  [countOfExecutions]	  int NULL,	
  [countOfRequests]        int NULL ,
  [countOfFails]           int NULL ,
@@ -308,21 +317,21 @@ AS
 SELECT	si.projectId, si.EnvId, si.testNumberId, si.Duration, si.RampUp, si.NumberOfThreads,
 		agr.NameOfTest,
 		agr.NumberOfThreads as RecievedNumberOfThreads,
-		agr.[AverageElapsedTime, ms],
-		agr.[MinElapsedTime, ms],
-		agr.[MaxElapsedTime, ms],
+		agr.[AverageElapsedTimeMs],
+		agr.[MinElapsedTimeMs],
+		agr.[MaxElapsedTimeMs],
 		agr.CountOfExecutions,
 		agr.CountOfFails,
 		CASE 
-			WHEN agr.NameOfTest LIKE N'2.1.%' AND agr.[AverageElapsedTime, ms] <= (SELECT TOP 1 ti.TargetValue FROM DWH.TargetInfo ti WHERE SUBSTRING(ti.TargetName,1,3)=SUBSTRING(agr.NameOfTest, 1, 3) AND ti.projectId=si.projectId) THEN 'Passed'
-			WHEN agr.NameOfTest LIKE N'2.2%' AND agr.[AverageElapsedTime, ms] <= (SELECT TOP 1 ti.TargetValue FROM DWH.TargetInfo ti WHERE SUBSTRING(ti.TargetName,1,3)=SUBSTRING(agr.NameOfTest, 1, 3) AND ti.projectId=si.projectId) THEN 'Passed'
-			WHEN agr.NameOfTest LIKE N'2.3%' AND agr.[AverageElapsedTime, ms] <= (SELECT TOP 1 ti.TargetValue FROM DWH.TargetInfo ti WHERE SUBSTRING(ti.TargetName,1,3)=SUBSTRING(agr.NameOfTest, 1, 3) AND ti.projectId=si.projectId) THEN 'Passed'
-			WHEN agr.NameOfTest LIKE N'2.4%' AND agr.[AverageElapsedTime, ms] <= (SELECT TOP 1 ti.TargetValue FROM DWH.TargetInfo ti WHERE SUBSTRING(ti.TargetName,1,3)=SUBSTRING(agr.NameOfTest, 1, 3) AND ti.projectId=si.projectId) THEN 'Passed'
-			WHEN agr.NameOfTest LIKE N'2.6%' AND agr.[AverageElapsedTime, ms] <= (SELECT TOP 1 ti.TargetValue FROM DWH.TargetInfo ti WHERE SUBSTRING(ti.TargetName,1,3)=SUBSTRING(agr.NameOfTest, 1, 3) AND ti.projectId=si.projectId) THEN 'Passed'
-			WHEN agr.NameOfTest LIKE N'2.7.%' AND agr.[AverageElapsedTime, ms] <= (SELECT TOP 1 ti.TargetValue FROM DWH.TargetInfo ti WHERE SUBSTRING(ti.TargetName,1,3)=SUBSTRING(agr.NameOfTest, 1, 3) AND ti.projectId=si.projectId) THEN 'Passed'
-			WHEN agr.NameOfTest LIKE N'2.8%' AND agr.[AverageElapsedTime, ms] <= (SELECT TOP 1 ti.TargetValue FROM DWH.TargetInfo ti WHERE SUBSTRING(ti.TargetName,1,3)=SUBSTRING(agr.NameOfTest, 1, 3) AND ti.projectId=si.projectId) THEN 'Passed'
-			WHEN agr.NameOfTest LIKE N'2.9%' AND agr.[AverageElapsedTime, ms] <= (SELECT TOP 1 ti.TargetValue FROM DWH.TargetInfo ti WHERE SUBSTRING(ti.TargetName,1,3)=SUBSTRING(agr.NameOfTest, 1, 3) AND ti.projectId=si.projectId) THEN 'Passed'
-			WHEN agr.NameOfTest LIKE N'2.10%' AND agr.[AverageElapsedTime, ms] <= (SELECT TOP 1 ti.TargetValue FROM DWH.TargetInfo ti WHERE SUBSTRING(ti.TargetName,1,3)=SUBSTRING(agr.NameOfTest, 1, 3) AND ti.projectId=si.projectId) THEN 'Passed'
+			WHEN agr.NameOfTest LIKE N'2.1.%' AND agr.[AverageElapsedTimeMs] <= (SELECT TOP 1 ti.TargetValue FROM DWH.TargetInfo ti WHERE SUBSTRING(ti.TargetName,1,3)=SUBSTRING(agr.NameOfTest, 1, 3) AND ti.projectId=si.projectId) THEN 'Passed'
+			WHEN agr.NameOfTest LIKE N'2.2%' AND agr.[AverageElapsedTimeMs] <= (SELECT TOP 1 ti.TargetValue FROM DWH.TargetInfo ti WHERE SUBSTRING(ti.TargetName,1,3)=SUBSTRING(agr.NameOfTest, 1, 3) AND ti.projectId=si.projectId) THEN 'Passed'
+			WHEN agr.NameOfTest LIKE N'2.3%' AND agr.[AverageElapsedTimeMs] <= (SELECT TOP 1 ti.TargetValue FROM DWH.TargetInfo ti WHERE SUBSTRING(ti.TargetName,1,3)=SUBSTRING(agr.NameOfTest, 1, 3) AND ti.projectId=si.projectId) THEN 'Passed'
+			WHEN agr.NameOfTest LIKE N'2.4%' AND agr.[AverageElapsedTimeMs] <= (SELECT TOP 1 ti.TargetValue FROM DWH.TargetInfo ti WHERE SUBSTRING(ti.TargetName,1,3)=SUBSTRING(agr.NameOfTest, 1, 3) AND ti.projectId=si.projectId) THEN 'Passed'
+			WHEN agr.NameOfTest LIKE N'2.6%' AND agr.[AverageElapsedTimeMs] <= (SELECT TOP 1 ti.TargetValue FROM DWH.TargetInfo ti WHERE SUBSTRING(ti.TargetName,1,3)=SUBSTRING(agr.NameOfTest, 1, 3) AND ti.projectId=si.projectId) THEN 'Passed'
+			WHEN agr.NameOfTest LIKE N'2.7.%' AND agr.[AverageElapsedTimeMs] <= (SELECT TOP 1 ti.TargetValue FROM DWH.TargetInfo ti WHERE SUBSTRING(ti.TargetName,1,3)=SUBSTRING(agr.NameOfTest, 1, 3) AND ti.projectId=si.projectId) THEN 'Passed'
+			WHEN agr.NameOfTest LIKE N'2.8%' AND agr.[AverageElapsedTimeMs] <= (SELECT TOP 1 ti.TargetValue FROM DWH.TargetInfo ti WHERE SUBSTRING(ti.TargetName,1,3)=SUBSTRING(agr.NameOfTest, 1, 3) AND ti.projectId=si.projectId) THEN 'Passed'
+			WHEN agr.NameOfTest LIKE N'2.9%' AND agr.[AverageElapsedTimeMs] <= (SELECT TOP 1 ti.TargetValue FROM DWH.TargetInfo ti WHERE SUBSTRING(ti.TargetName,1,3)=SUBSTRING(agr.NameOfTest, 1, 3) AND ti.projectId=si.projectId) THEN 'Passed'
+			WHEN agr.NameOfTest LIKE N'2.10%' AND agr.[AverageElapsedTimeMs] <= (SELECT TOP 1 ti.TargetValue FROM DWH.TargetInfo ti WHERE SUBSTRING(ti.TargetName,1,3)=SUBSTRING(agr.NameOfTest, 1, 3) AND ti.projectId=si.projectId) THEN 'Passed'
 			ELSE 'Not Passed'
 		END AS Summary
 FROM DWH.ScenarioInfo si

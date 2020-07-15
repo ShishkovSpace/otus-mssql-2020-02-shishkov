@@ -1,4 +1,4 @@
-USE [LoadTestResults];
+USE [LoadTestResults20];
 
 GO
 CREATE PROCEDURE dbo.UpdateStatsAndInd

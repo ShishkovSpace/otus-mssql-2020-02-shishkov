@@ -159,7 +159,7 @@ BEGIN TRY
 	WHERE responseMessage IS NOT NULL and (responseCode = 200 or responseCode IS NULL) and responseMessage NOT LIKE N'Non HTTP%';
 
     -- Insert all agregate values for current test number
-    INSERT INTO DWH.TestSummary ([testNumberId], [nameOfTest], [numberOfThreads], [averageElapsedTime, ms], [minElapsedTime, ms], [maxElapsedTime, ms], [countOfExecutions], [countOfRequests], [countOfFails])
+    INSERT INTO DWH.TestSummary (testNumberId, nameOfTest, numberOfThreads, AverageElapsedTimeMs, minElapsedTimeMs, maxElapsedTimeMs, countOfExecutions, countOfRequests, countOfFails)
     SELECT	testNumberId, 
 			label, 
 			MAX(ThreadsCount) as numberOfThreads, 
@@ -170,7 +170,7 @@ BEGIN TRY
 			COUNT(testNumberId) as countOfRequests, 
 			SUM(NumOfErrors) as countOfFails
     FROM DWH.ScoresLT
-    WHERE testNumberId=@testNumber
+    WHERE testNumberId=@testNumber AND projectId=@projectId
     GROUP BY testNumberId, Label;
 
 	COMMIT;
