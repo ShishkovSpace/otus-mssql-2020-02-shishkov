@@ -18,9 +18,9 @@ ALTER DATABASE LoadTestResults20
 	(
 		NAME = Partitions_ScoresLT,
 		FILENAME = 'C:\Program Files\Microsoft SQL Server\MSSQL15.SQLSERVERLOCAL\MSSQL\DATA\Partitions_ScoresLT.ndf',
-		SIZE = 50MB,
-		MAXSIZE = 1024MB,
-		FILEGROWTH = 50MB
+		SIZE = 250MB,
+		MAXSIZE = 2048MB,
+		FILEGROWTH = 250MB
 	)
 TO FILEGROUP Partitions_ScoresLT;
 
@@ -34,9 +34,9 @@ ALTER DATABASE LoadTestResults20
 	(
 		NAME = Partitions_ArchiveLT,
 		FILENAME = 'C:\Program Files\Microsoft SQL Server\MSSQL15.SQLSERVERLOCAL\MSSQL\DATA\Partitions_ArchiveLT.ndf',
-		SIZE = 50MB,
-		MAXSIZE = 1024MB,
-		FILEGROWTH = 50MB
+		SIZE = 250MB,
+		MAXSIZE = 2048MB,
+		FILEGROWTH = 250MB
 	)
 TO FILEGROUP Partitions_ArchiveLT;
 */
@@ -172,7 +172,7 @@ GO
 IF NOT EXISTS (SELECT * FROM sys.tables t join sys.schemas s ON (t.schema_id = s.schema_id) WHERE s.name='DWH' and t.name='ArchiveLT')
 CREATE TABLE [DWH].[ArchiveLT]
 (
- [id]           int IDENTITY (1, 1) NOT NULL ,
+ [id]           bigint IDENTITY (1, 1) NOT NULL ,
  [projectId]	int NOT NULL,
  [testNumberId] int NOT NULL ,
  [elapsedTime]  int NULL ,
@@ -233,7 +233,7 @@ GO
 IF NOT EXISTS (SELECT * FROM sys.tables t join sys.schemas s ON (t.schema_id = s.schema_id) WHERE s.name='DWH' and t.name='ScoresLT')
 CREATE TABLE [DWH].[ScoresLT]
 (
- [id]            int IDENTITY (1, 1) NOT NULL ,
+ [id]            bigint IDENTITY (1, 1) NOT NULL ,
  [projectId]	 int NOT NULL,
  [testNumberId]  int NOT NULL ,
  [numberOfExecution] int NULL,
@@ -292,7 +292,7 @@ IF NOT EXISTS (SELECT * FROM sys.tables t join sys.schemas s ON (t.schema_id = s
 CREATE TABLE [DWH].[TestSummary]
 (
  [testNumberId]           int NOT NULL ,
- [nameOfTest]             nvarchar(100) NULL ,
+ [nameOfTest]             nvarchar(100) NOT NULL ,
  [numberOfThreads]        int NULL ,
  [averageElapsedTimeMs]	  int NULL ,
  [minElapsedTimeMs]       int NULL ,
@@ -300,8 +300,8 @@ CREATE TABLE [DWH].[TestSummary]
  [countOfExecutions]	  int NULL,	
  [countOfRequests]        int NULL ,
  [countOfFails]           int NULL ,
- [date]                   datetime2(7) NOT NULL CONSTRAINT [DF_Scores_AGR_Date] DEFAULT GETDATE()
-
+ [date]                   datetime2(7) NOT NULL CONSTRAINT [DF_Scores_AGR_Date] DEFAULT GETDATE(),
+ CONSTRAINT [PK_TestSummary] PRIMARY KEY CLUSTERED ([testNumberId] ASC, [nameOfTest] ASC),
  CONSTRAINT [FK_testNumberId_Summary] FOREIGN KEY ([testNumberId])  REFERENCES [DWH].[ScenarioInfo]([testNumberId])
 );
 GO

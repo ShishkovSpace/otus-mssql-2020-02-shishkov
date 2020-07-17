@@ -1,7 +1,7 @@
 USE LoadTestResults20;
 
 GO
-EXEC [DWH].[prLoadTestScores] @ProjectId=1001, @EnvId=1, @Duration=3600, @RampUp=900, @NumberOfThreads=1000;
+EXEC [DWH].[prLoadTestScores] @projectId=1001, @envId=1, @duration=3600, @rampUp=900, @numberOfThreads=1000;
 
 GO
 SELECT *
